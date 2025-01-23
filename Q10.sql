@@ -1,0 +1,1 @@
+select * from (select * from department order by id desc) where rownum = 1;
