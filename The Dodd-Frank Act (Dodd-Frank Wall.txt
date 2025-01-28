@@ -1,0 +1,39 @@
+The Dodd-Frank Act (Dodd-Frank Wall Street Reform and Consumer Protection Act), enacted in 2010 in response to the 2008 financial crisis, introduced a wide range of regulations to improve transparency, reduce systemic risk, and protect consumers. While the Act itself doesn't directly specify database rules, financial institutions must use databases to comply with its provisions.
+Main Points: Dodd-Frank Rules Impacting Databases
+Data Storage and Retention:
+
+Maintain transaction records for 5–7 years.
+Use archiving, backup, and disaster recovery for long-term data integrity.
+Transaction Reporting:
+
+Enable real-time reporting of derivatives and swaps.
+Maintain complete audit trails and efficient query mechanisms.
+Risk Management and Stress Testing:
+
+Store risk models and historical market data for stress tests and stability assessments.
+Support complex queries and big data solutions to simulate adverse market conditions.
+Consumer Data Protection:
+
+Encrypt sensitive data and enforce strict access controls.
+Implement auditing to track data access and modifications.
+Collateral and Margin Tracking:
+
+Track collateral positions and ensure data consistency across systems.
+Support real-time updates for changes in market valuations.
+Legal Entity Identifiers (LEIs):
+
+Include LEIs in transaction records to improve counterparty transparency.
+Surveillance and Monitoring:
+
+Store logs for fraud detection and integrate with AI/ML models for anomaly detection.
+Enable real-time analytics to flag and monitor suspicious trade activities.
+Cross-Border Compliance:
+
+Ensure compliance with regional data sovereignty laws and multi-jurisdictional data storage requirements.
+Regulatory Reporting Standards:
+
+Design databases for structured data to generate accurate compliance reports (e.g., Form PF, SDRs).
+Data Governance:
+
+Use master data management (MDM) for consistency and reliability.
+Implement data lineage, quality checks, and reconciliation processes to ensure accuracy.
