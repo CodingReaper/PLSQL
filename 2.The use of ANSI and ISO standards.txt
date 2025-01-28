@@ -1,0 +1,50 @@
+2.The use of ANSI and ISO standards in the context of SQL and other technologies is to provide a unified, consistent foundation for implementation and interoperability. Even though different database vendors extend or modify the standards to suit their systems, ANSI and ISO standards remain critical for the following reasons:
+
+I. Common Ground for Interoperability
+Purpose: Ensure that a basic set of commands and functionalities work across databases regardless of the vendor.
+Example:
+Core SQL commands like SELECT, INSERT, UPDATE, and DELETE behave similarly in Oracle, MySQL, PostgreSQL, and SQL Server because they adhere to the ANSI/ISO SQL standard.
+This allows developers to write portable queries for basic database operations.
+
+II. Ensures Cross-Vendor Compatibility
+With ANSI/ISO SQL compliance, switching between database systems becomes easier.
+Many vendors advertise their products as ANSI SQL-compliant, ensuring that fundamental SQL queries will work with minimal or no changes.
+Example: Migrating a database from MySQL to PostgreSQL can reuse the same ANSI-compliant queries without rewriting the entire codebase.
+
+3.Schema:
+A schema is a logical collection of database objects (e.g., tables, views) owned by a user. The schema itself does not store data directly but acts as a container for objects.
+
+Tablespace:
+Schema objects (like tables) store their data in a tablespace, which is a logical storage structure in Oracle. A schema can use one or more tablespaces to organize its data.
+
+Datafiles:
+Each tablespace is associated with one or more datafiles. It is a physical representation of a tablespace on the OS . Datafiles are the binary files on diskor ssd or hdd that store the actual data of schema objects.
+
+Physical Storage:
+Datafiles reside on the physical storage of the database server, such as an HDD (hard disk drive) or SSD (solid-state drive). The type of physical storage affects performance—SSDs provide faster read/write speeds than HDDs.
+
+5.Retrieval Of Data for tables
+7. Retrieving Data (How the Process Works)
+Let’s go through a step-by-step flow of how Oracle retrieves data when a query is executed:
+
+User Executes Query:
+
+A user submits a SQL query to Oracle (e.g., SELECT * FROM employees).
+Oracle’s SQL Engine processes this query and determines what data needs to be retrieved.
+
+Identifying the Table:
+Oracle identifies which schema and table the query refers to (e.g., employees in the HR schema).
+
+Locating the Tablespace:
+Oracle checks the tablespace associated with the employees table. The schema HR points to a specific tablespace (say, hr_tablespace).
+
+Finding Data Blocks:
+Oracle accesses the data file(s) corresponding to the hr_tablespace to locate the data blocks that hold the rows for the employees table.
+Oracle checks the segment for the employees table (a collection of extents(collection of contiguous data blocks)) and finds which extent contains the relevant rows.
+
+Reading Data Blocks:
+Oracle reads the data block(s) that contain the row data for the employees table. It reads the row pieces that are stored within the data blocks.
+If the row spans multiple data blocks (row chaining), Oracle reads each block, following the ROWID chain to gather the entire row.
+Returning Data to User:
+
+After locating the row(s) in the data blocks, Oracle retrieves the data and returns it to the user’s application.
