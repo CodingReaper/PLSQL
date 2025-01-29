@@ -1,0 +1,155 @@
+1.So the answer would be: If you don't create a tablespace and don't specify one when creating a table, the table goes into the user's default tablespace. If the user hasn't been assigned one, it uses the database's default, which is typically USERS, not SYSTEM anymore. Also the DBA can assign a default tablespace for the database so in this scenario the table is stored in the default tablespace assigned by DBA instead of USERS and SYSTEM tablespaces. But it's still important to create separate tablespaces for better management.
+SYSTEM is meant for data dictionary and system objects. Putting user tables there can cause fragmentation and performance issues.
+
+2.SYSTEM: Contains the data dictionary, administrative information, and compiled stored objects LIKE table definitions, user privileges, constraints.
+SYSAUX: An auxiliary tablespace to the SYSTEM tablespace 
+TEMP: A temporary tablespace for storing temporary data generated when processing SQL statements 
+USERS: A default tablespace for storing permanent user objects and data 
+UNDO:Undo tablespace usage in Oracle refers to the amount of space used to store undo records in an Oracle database. Undo records are used to track changes made to data, which allows the database to roll back transactions, recover from failures, and maintain read consistency. 
+
+4.In Oracle SQL, the NUMBER data type is used to store numeric data. The difference between NUMBER(10,2) and NUMBER(10) lies in the precision and scale:
+NUMBER(10,2):
+Precision: 10 (The total number of significant digits that can be stored, both to the left and right of the decimal point).
+Scale: 2 (The number of digits to the right of the decimal point).
+This means you can store numbers with up to 10 total digits, with exactly 2 digits after the decimal point.
+Examples:
+Valid: 12345678.90, -9876543.21
+Invalid: 1234567890.12 (exceeds total precision), 12345.678 (exceeds scale).
+NUMBER(10):
+Precision: 10 (The total number of significant digits).
+Scale: 0 (Default; no fractional part is allowed).
+This means you can store numbers with up to 10 total digits, but only as whole numbers.
+Examples:
+Valid: 1234567890, -987654321
+Invalid: 12345.67 (fractional part not allowed).
+Summary:
+NUMBER(10,2) is for numbers with decimals, limiting the decimal part to 2 digits.
+NUMBER(10) is for whole numbers, with no decimal places allowed.
+
+3.Temp Files (Temporary Data Files)
+Use:
+Store temporary data for operations like sorting, hashing, or global temporary tables.
+Used when operations exceed available memory (PGA).
+Contents:
+Temporary data that is not persisted beyond the session/transaction.
+Part of a temporary tablespace (e.g., TEMP), which is shared by all users.
+Key Notes:
+Not backed up (since they contain no permanent data).
+Automatically managed by Oracle (extended or shrunk as needed).
+Can be recreated at database startup if missing.
+
+Parameter File (PFILE or SPFILE)
+Use:
+Stores configuration parameters for the database instance (e.g., memory allocation, process limits, and database behavior settings).
+Used during database startup to configure the instance.
+(instance->collection if background processes and shared memory that run the oracle DB)
+
+PGA->A Program Global Area (PGA) is a memory region that contains data and control information for a server process. It is nonshared memory created by Oracle Database when a server process is started. Access to the PGA is exclusive to the server process. There is one PGA for each server process.
+
+Control Files:
+Every Oracle database has a control file. A control file is a small binary file that records the physical structure of the database and metadata that includes:
+The database name
+Names and locations of associated datafiles and online redo log files
+The timestamp of the database creation
+The current log sequence number
+Checkpoint information
+The control file must be available for writing by the Oracle database server whenever the database is open. Without the control file, the database cannot be mounted (After starting an instance, Oracle associates the instance with the specified database. This is called mounting the database. The database is then ready to be opened, which makes it accessible to authorized users.) and recovery is difficult.
+
+Typically multiplexed for fault tolerance.
+Multiplexing->In Oracle DBMS, multiplexing control files refers to the practice of maintaining multiple identical copies of the control file in different physical locations to ensure high availability and fault tolerance. If one copy of the control file becomes unavailable or corrupted, the database can continue functioning using the other copies.
+
+How Does Multiplexing Work?
+Oracle writes the same information to all control file copies simultaneously.
+If one copy becomes inaccessible, the database can continue using the remaining copies without interruption.
+
+Redo Log File
+Purpose: Tracks all changes made to the database, ensuring recoverability.
+Contains:
+A chronological record of all transactions (DML and DDL) in the database.
+Used for rolling forward during recovery.
+Use:
+Ensures data consistency and durability in case of failure.
+Enables recovery of committed transactions after system crashes.
+Used by Oracle's recovery processes to reconstruct lost data.
+Configuration:
+Maintained in groups for redundancy (e.g., multiple redo log members per group).
+
+
+5.A Float datatype is a subtype from number datatype.
+When to Use Each
+Use NUMBER:
+When you need exact decimal precision (e.g., currency, accounting).
+For integers or fixed-scale decimals (e.g., NUMBER(5) for IDs).
+
+Use FLOAT:
+When dealing with scientific data (e.g., physics, engineering).
+For values with extremely large or small magnitudes (e.g., 1.23E+30).
+When minor rounding errors are acceptable (not for financial transactions!).
+
+6.So, in summary, the main difference is that VARCHAR2 is Oracle's specific data type and is recommended for use, while VARCHAR is a standard SQL type that Oracle currently treats as VARCHAR2 but might change in the future. Therefore, to avoid any potential future compatibility issues, one should use VARCHAR2.
+
+Current Behavior (As of Now):
+VARCHAR and VARCHAR2 are synonyms in Oracle. Both:
+Treat an empty string ('') as NULL.
+Have identical storage limits (up to 4000 bytes by default, or 32767 with MAX_STRING_SIZE=EXTENDED).
+Future Behavior (Oracle's Warning):
+VARCHAR:
+Reserved by Oracle to potentially align with ANSI SQL standards in the future.
+May distinguish between NULL and empty strings (as ANSI SQL requires treating '' as a valid value, separate from NULL).
+VARCHAR2:
+Guaranteed to never change — it will always treat empty strings as NULL.
+Oracle explicitly states that VARCHAR2's behavior is fixed for backward compatibility.
+
+7.
+CREATE TABLE schema_x.EMPLOYEE_TRAINING (
+    EMP_ID NUMBER UNIQUE NOT NULL,
+    FIRST_NAME VARCHAR2(50) NOT NULL,
+    LAST_NAME VARCHAR2(50) NOT NULL,
+    GENDER CHAR(1) CHECK (GENDER IN ('M', 'F', 'O')),
+    EMAIL VARCHAR2(100),
+    PHONE_NUMBER VARCHAR2(15),
+    HIRE_DATE DATE DEFAULT TO_DATE('01-JAN-2025', 'DD-MON-YYYY'),
+    JOB_ID VARCHAR2(10),
+    SALARY NUMBER CHECK (SALARY > 0),
+    COMMISSION_PCT NUMBER(5, 2),
+    MANAGER_ID NUMBER,
+    DEPARTMENT_ID NUMBER
+)
+TABLESPACE tablespace_x;
+
+
+EXTRA THINGS
+Let me explain this in simpler terms.
+
+Oracle uses PCTFREE and PCTUSED to manage the storage of rows in a data block (a small unit of storage in a tablespace).
+
+Key Points:
+PCTFREE:
+
+This defines how much free space should be left in a block when inserting new rows.
+Once the free space falls below the PCTFREE threshold, Oracle stops inserting new rows into that block.
+PCTUSED:
+
+This defines when a block becomes eligible for new rows again after it was marked "full" due to PCTFREE.
+If the used space in the block drops below the PCTUSED value (because rows were deleted or updated to free up space), Oracle will consider the block for new rows again.
+Example:
+You create a table with:
+
+PCTFREE = 20 (leave 20% free space during insertion).
+PCTUSED = 40 (reuse the block for new rows if used space drops below 40%).
+What happens when rows are inserted?
+
+A block starts with 100% free space.
+Oracle keeps inserting rows into the block until the free space reaches 20% (PCTFREE).
+After that, the block is considered "full" and won't accept new rows.
+What happens if rows are deleted or updated?
+
+Let’s say some rows are deleted, and the used space drops to 39%.
+Now the block is eligible for new rows again because it is below PCTUSED.
+Visualizing the Process:
+Initial Insertion:
+Space in the block decreases with each row inserted until free space = 20% (PCTFREE).
+At this point, Oracle stops inserting new rows into the block.
+After Deletions/Updates:
+Rows are deleted, and the block’s used space drops to 39% or less (below PCTUSED).
+The block becomes available for new rows.
