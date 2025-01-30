@@ -1,0 +1,45 @@
+1.Understanding ENABLE VALIDATE in Oracle
+When creating or modifying constraints on a table, Oracle provides different states for constraint enforcement:
+
+ENABLE → The constraint is enforced.
+DISABLE → The constraint is not enforced.
+VALIDATE → Oracle checks all existing rows to ensure they comply with the constraint.
+NOVALIDATE → The constraint is enforced only for new data but does not check existing rows.
+
+2.Yes! In Oracle, the DEFERRABLE and DEFERRED columns in USER_CONSTRAINTS represent the constraint state and behavior.
+
+1. DEFERRABLE Column (Is the Constraint Deferrable?)
+This column tells you whether the constraint can be deferred (i.e., whether it can be temporarily ignored until COMMIT).
+
+DEFERRABLE Value	Meaning
+DEFERRABLE	The constraint can be switched between IMMEDIATE and DEFERRED modes.
+NOT DEFERRABLE	The constraint must be checked immediately after every statement (cannot be deferred).
+2. DEFERRED Column (Is the Constraint Currently Deferred?)
+This column tells you when the constraint is currently being enforced (either immediately or at commit).
+
+DEFERRED Value	Meaning
+IMMEDIATE	The constraint is being checked immediately after each statement.
+DEFERRED	The constraint is being checked only at transaction commit.
+
+
+Command to select the constraints:-select table_name,constraint_name,deferrable,deferred,validated,status from user_constraints where table_name='training';
+
+3.SELECT COLUMN_NAME, TABLE_NAME
+FROM USER_TAB_COLUMNS where TABLE_NAME = 'EMPLOYEES';
+
+SELECT INDEX_NAME, TABLE_NAME, TABLE_OWNER
+FROM USER_INDEXES;
+
+SELECT OBJECT_NAME, PROCEDURE_NAME
+FROM USER_PROCEDURES;
+
+4.SELECT CASE 
+           WHEN NULL = NULL THEN 'True'
+           ELSE 'False' 
+       END AS result
+FROM dual;
+
+Because null represents lack of data 
+and since it is unknown we cannot determine whether one null value is equal to another.
+
+5.Oracle attempts to be helpful by implicitly converting the string ' 1' to a number.  It sees the digits '1' and interprets the string as the number 1. The leading space is ignored in the conversion process.
