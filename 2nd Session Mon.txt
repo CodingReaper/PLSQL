@@ -1,0 +1,37 @@
+https://docs.oracle.com/en/database/other-databases/essbase/21/essdm/dimensions-and-members.html
+
+https://www.geeksforgeeks.org/difference-between-olap-and-oltp-in-dbms/
+
+
+What is Essbase?
+It is a multidimensional database that enables Business Users to
+analyze Business data in multiple views/perspectives and at different consolidation levels 
+it stores data the data in a multidimensional array.
+
+minute->day->week->month->qtr->year
+
+consolidation levels:-
+dimensions:-A dimension represents the highest consolidation level in the Essbase database outline. The outline presents dimensions and members in a tree structure to define a hierarchical consolidation relationship.
+For example, Year is a dimension (of type Time) and Qtr1 is a member:
+
+
+Copy
+Year Time
+   Qtr1 (+)
+      Jan (+)
+......Feb (+)
+......Mar (+)
+
+
+Standard dimensions represent the core components of a business plan and often relate to departmental functions. Typical standard dimensions: Time, Accounts, Product Line, Market, and Division. Dimensions change less frequently than members.
+
+Attribute dimensions are associated with standard dimensions. Through attribute dimensions, you group and analyze members of standard dimensions based on the member attributes (characteristics). For example, you can compare the profitability of noncaffeinated products that are packaged in glass to the profitability of noncaffeinated products packaged in cans.
+
+Members are the individual components of a dimension. For example, Product A, Product B, and Product C might be members of the Product dimension. Each member has a unique name. Data associated with a member can be stored (referred to as a stored member in this chapter), or the data can be dynamically calculated when a user retrieves it.
+
+PBCS:_
+Essbase is the underlying calculation engine that powers Oracle Planning and Budgeting Cloud Service (PBCS), meaning that PBCS uses Essbase to perform complex data calculations and analysis on the data stored within the PBCS application; essentially, PBCS is a user interface built on top of the Essbase technology, providing a more accessible way to manage budgeting and planning tasks while leveraging Essbase's calculation capabilities. 
+
+Essbase is the underlying calculation engine that powers Oracle Planning and Budgeting Cloud Service (PBCS), meaning that PBCS uses Essbase to perform complex data calculations and analysis on the data stored within the PBCS application; essentially, PBCS is a user interface built on top of the Essbase technology, providing a more accessible way to manage budgeting and planning tasks while leveraging Essbase's calculation capabilities. 
+
+You need Essbase instead of a traditional RDBMS when you require fast, complex analytical queries across large datasets with multiple dimensions, as Essbase is specifically designed for Online Analytical Processing (OLAP) which excels at handling these types of queries, while RDBMS are primarily optimized for transactional processing and struggle with large-scale analytical workloads. 

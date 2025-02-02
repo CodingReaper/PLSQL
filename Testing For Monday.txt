@@ -1,0 +1,220 @@
+1.create table table_x (id number);
+
+insert all
+into table_x values(NULL)
+into table_x values(NULL)
+into table_x values(NULL)
+into table_x values(NULL)
+select 1 from dual;
+
+SELECT DISTINCT cnt FROM (SELECT COUNT(*) AS cnt FROM table_x);
+
+2.create table table_x(id number CONSTRAINT id_nn NOT NULL DISABLE);
+select constraint_name,status from user_constraints where table_name = 'TABLE_X';
+
+insert into table_x values(NULL);
+commit;
+
+alter table table_x modify constraint id_nn ENABLE NOVALIDATE;
+
+select * from table_x;
+
+drop table table_x;
+
+
+
+--Fetch the first name, last name, job title, and salary of employees using a join.
+select e.first_name,e.last_name,j.job_title,e.salary from employees_training e join jobs_training j ON e.job_id = j.job_id;
+
+--Retrieve all departments along with their locations.
+desc departments_training;
+desc locations_training;
+desc countries_training;
+desc employees_training;
+SELECT * FROM DEPARTMENTS_TRAINING;
+SELECT * FROM LOCATIONS_TRAINING;
+SELECT * FROM COUNTRIES_TRAINING;
+select d.department_name,l.street_address,l.city,l.state_province,l.postal_code from departments_training d 
+JOIN locations_training l ON d.location_id = l.location_id;
+ SELECT 
+    d.DEPARTMENT_NAME, 
+    l.STREET_ADDRESS, 
+    l.CITY, 
+    l.STATE_PROVINCE, 
+    l.POSTAL_CODE, 
+    c.COUNTRY_NAME 
+FROM DEPARTMENTS_TRAINING d 
+JOIN LOCATIONS_TRAINING l ON d.LOCATION_ID = l.LOCATION_ID
+JOIN COUNTRIES_TRAINING c ON l.COUNTRY_ID = c.COUNTRY_ID;
+
+--Get the list of employees along with their department names.
+select e.first_name,e.last_name,d.department_name from employees_training e join departments_training d ON e.department_id = d.department_id;
+
+ --List employees along with their managers' names.
+select CONCAT(e1.first_name,e1.last_name) as empname ,e2.first_name as mgrname from employees_training e1 JOIN employees_training e2 ON e1.employee_id = e2.manager_id;
+
+--Fetch employees and their job history (if available).
+desc job_history_training;
+select e.*,j.start_date,j.end_date from employees_training e JOIN job_history_training j ON e.employee_id = j.employee_id;
+
+--Display employees along with their job title, department name, and location.
+desc employees_training;
+desc jobs_training;
+desc departments_training;
+desc locations_training;
+desc job_history_training;
+select e.first_name,j.job_title,d.department_name,l.street_address,l.city,l.postal_code,l.state_province from 
+employees_training e JOIN jobs_training j ON e.job_id = j.job_id
+JOIN departments_training d ON e.department_id = d.department_id
+JOIN LOCATIONS_TRAINING l ON d.location_id = l.location_id;
+
+--Retrieve a list of employees who have worked in different jobs in the past.
+SELECT DISTINCT e.EMPLOYEE_ID, 
+                e.FIRST_NAME, 
+                e.LAST_NAME, 
+                e.JOB_ID AS CURRENT_JOB, 
+                jh.JOB_ID AS PREVIOUS_JOB 
+FROM EMPLOYEES_TRAINING e 
+JOIN JOB_HISTORY_TRAINING jh ON e.EMPLOYEE_ID = jh.EMPLOYEE_ID
+WHERE e.JOB_ID != jh.JOB_ID;
+
+--Show the list of employees along with their region name.
+SELECT e.EMPLOYEE_ID, 
+       e.FIRST_NAME, 
+       e.LAST_NAME, 
+       r.REGION_NAME
+FROM EMPLOYEES_TRAINING e
+JOIN DEPARTMENTS_TRAINING d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+JOIN LOCATIONS_TRAINING l ON d.LOCATION_ID = l.LOCATION_ID
+JOIN COUNTRIES_TRAINING c ON l.COUNTRY_ID = c.COUNTRY_ID
+JOIN REGIONS_TRAINING r ON c.REGION_ID = r.REGION_ID;
+
+--Get all employees and their departments, including employees with no assigned department.
+SELECT e.EMPLOYEE_ID, 
+       e.FIRST_NAME, 
+       e.LAST_NAME, 
+       d.DEPARTMENT_NAME
+FROM EMPLOYEES_TRAINING e
+LEFT JOIN DEPARTMENTS_TRAINING d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID;
+
+--Fetch all departments and their managers, even if a department does not have a manager.
+SELECT d.department_name, 
+       COALESCE(m.first_name, 'No Manager') AS manager_first_name, 
+       COALESCE(m.last_name, '') AS manager_last_name
+FROM DEPARTMENTS_TRAINING d
+LEFT JOIN EMPLOYEES_TRAINING m ON d.MANAGER_ID = m.EMPLOYEE_ID;
+
+--Find the number of employees in each department.
+SELECT d.DEPARTMENT_NAME, 
+       e.DEPARTMENT_ID, 
+       COUNT(*) AS EMPLOYEE_COUNT
+FROM EMPLOYEES_TRAINING e
+JOIN DEPARTMENTS_TRAINING d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY d.DEPARTMENT_NAME, e.DEPARTMENT_ID
+ORDER BY EMPLOYEE_COUNT DESC;
+
+--Retrieve the average salary for each job.
+select j.job_title,j.job_id,avg(e.salary) as avg_sal from employees_training e JOIN jobs_training j ON e.job_id = j.job_id GROUP BY j.job_id,j.job_title order by avg_sal desc;
+
+-- salary expense of each department
+SELECT d.DEPARTMENT_NAME, 
+       d.DEPARTMENT_ID, 
+       SUM(e.SALARY) AS TOTAL_SALARY_EXPENSE
+FROM EMPLOYEES_TRAINING e
+JOIN DEPARTMENTS_TRAINING d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY d.DEPARTMENT_NAME, d.DEPARTMENT_ID
+ORDER BY TOTAL_SALARY_EXPENSE DESC;
+
+-- employee count by region
+SELECT r.REGION_NAME, 
+       COUNT(e.EMPLOYEE_ID) AS EMPLOYEE_COUNT
+FROM EMPLOYEES_TRAINING e
+JOIN DEPARTMENTS_TRAINING d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+JOIN LOCATIONS_TRAINING l ON d.LOCATION_ID = l.LOCATION_ID
+JOIN COUNTRIES_TRAINING c ON l.COUNTRY_ID = c.COUNTRY_ID
+JOIN REGIONS_TRAINING r ON c.REGION_ID = r.REGION_ID
+GROUP BY r.REGION_NAME
+ORDER BY EMPLOYEE_COUNT DESC;
+
+--Find the maximum salary in each department where the max salary is above $10,000
+SELECT d.DEPARTMENT_NAME, 
+       d.DEPARTMENT_ID, 
+       MAX(e.SALARY) AS max_salary
+FROM EMPLOYEES_TRAINING e
+JOIN DEPARTMENTS_TRAINING d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY d.department_id,d.department_name having max(e.salary)>10000 ORDER BY max_salary desc;
+
+--Find the department with the highest number of employees
+select * from (SELECT d.DEPARTMENT_NAME, 
+       d.DEPARTMENT_ID, 
+       COUNT(e.EMPLOYEE_ID) AS EMPLOYEE_COUNT
+FROM EMPLOYEES_TRAINING e
+JOIN DEPARTMENTS_TRAINING d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY d.DEPARTMENT_NAME, d.DEPARTMENT_ID
+ORDER BY EMPLOYEE_COUNT DESC) where rownum = 1;
+
+--Retrieve employees whose salary is higher than the average salary.
+SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME, SALARY
+FROM EMPLOYEES_TRAINING
+WHERE SALARY > (SELECT AVG(SALARY) FROM EMPLOYEES_TRAINING)
+ORDER BY SALARY DESC;
+
+--Find employees who work in the same department as 'John Doe'.
+select first_name,last_name,department_id from employees_training where department_id = (select department_id from employees_training where first_name = 'Steven' and last_name = 'King');
+
+-- Get the names of employees who have the same job title as 'Jane Smith'.
+desc employees_training;
+select first_name,last_name,job_id from employees_training where job_id = (select job_id from employees_training where first_name = 'Steven' and last_name = 'King');
+
+SELECT e.FIRST_NAME, e.LAST_NAME, j.JOB_TITLE, e.JOB_ID
+FROM EMPLOYEES_TRAINING e
+JOIN JOBS_TRAINING j ON e.JOB_ID = j.JOB_ID
+WHERE e.JOB_ID = (
+    SELECT JOB_ID 
+    FROM EMPLOYEES_TRAINING 
+    WHERE FIRST_NAME = 'Steven' AND LAST_NAME = 'King'
+);
+
+--List employees who earn more than their managers.
+SELECT e1.EMPLOYEE_ID, e1.FIRST_NAME, e1.LAST_NAME, e1.SALARY AS EMP_SALARY, 
+       e2.EMPLOYEE_ID AS MGR_ID, e2.FIRST_NAME AS MGR_NAME, e2.SALARY AS MGR_SALARY
+FROM EMPLOYEES_TRAINING e1  
+JOIN EMPLOYEES_TRAINING e2  
+ON e1.MANAGER_ID = e2.EMPLOYEE_ID  
+WHERE e1.SALARY > e2.SALARY;
+
+--Find the department with the highest number of employees using a subquery
+SELECT DEPARTMENT_ID, DEPARTMENT_NAME
+FROM DEPARTMENTS_TRAINING
+WHERE DEPARTMENT_ID = (
+    SELECT DEPARTMENT_ID 
+    FROM (  
+        SELECT DEPARTMENT_ID, COUNT(*) AS EMP_COUNT  
+        FROM EMPLOYEES_TRAINING  
+        GROUP BY DEPARTMENT_ID  
+        ORDER BY EMP_COUNT DESC  
+    )  
+    WHERE ROWNUM = 1
+);
+
+--Retrieve the job title of employees who have worked in more than one department
+SELECT DISTINCT e.FIRST_NAME, e.LAST_NAME, j.JOB_TITLE
+FROM EMPLOYEES_TRAINING e
+JOIN JOBS_TRAINING j ON e.JOB_ID = j.JOB_ID
+WHERE e.employee_id IN (select employee_id from job_history_training group by employee_id having count(distinct department_id) > 1);
+
+--Find employees who have never changed their job
+select first_name,last_name from employees_training where employee_id not in (select distinct employee_id from job_history_training);
+
+-- Find employees who have changed their job
+select first_name,last_name from employees_training where employee_id in (select distinct employee_id from job_history_training);
+
+--Show the difference in salary between the highest-paid and second highest-paid employee in each department.
+SELECT 
+    d.DEPARTMENT_NAME,d.department_id,
+    MAX(e1.SALARY) - MAX(e2.SALARY) AS SALARY_DIFFERENCE
+FROM EMPLOYEES_TRAINING e1
+JOIN EMPLOYEES_TRAINING e2 ON e1.DEPARTMENT_ID = e2.DEPARTMENT_ID 
+AND e1.SALARY > e2.SALARY
+JOIN DEPARTMENTS_TRAINING d ON e1.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY d.department_id,d.department_name;
