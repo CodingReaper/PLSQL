@@ -1,0 +1,123 @@
+1.Yes, instead of using "SELECT *" in your SQL query, you can explicitly list the specific column names you want to retrieve from the table, which is considered a better practice as it improves readability and can potentially optimize query performance by only fetching the necessary data.
+
+2.The TO_CHAR function in Oracle converts a number or a date (or timestamp) to a string (VARCHAR2) using a specified format model. This is useful when you want to display dates or numbers in a particular format or when you need to combine them with text.
+
+Syntax
+There are two main forms of the function:
+
+1. Converting Dates:
+sql
+Copy
+Edit
+TO_CHAR(date_value [, format_model [, nls_parameter]])
+date_value: The date, timestamp, or interval you want to convert.
+format_model (optional): A string that specifies the date format.
+nls_parameter (optional): A parameter to specify the NLS (National Language Support) settings, such as the language or calendar used.
+2. Converting Numbers:
+sql
+Copy
+Edit
+TO_CHAR(number_value [, format_model [, nls_parameter]])
+number_value: The number you want to convert.
+format_model (optional): A string that specifies the numeric format.
+nls_parameter (optional): A parameter to specify locale-specific settings (like the decimal or group separator).
+
+SELECT TO_CHAR(12345.6789, '$99,999.9999') AS formatted_number
+FROM dual;
+SELECT TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI:SS') AS current_date_time
+FROM dual;
+
+3.LTRIM removes from the left end of char all of the characters contained in set. If you do not specify set, then it defaults to a single blank. Oracle Database begins scanning char from its first character and removes all characters that appear in set until reaching a character not in set and then returns the result.
+
+Both char and set can be any of the data types CHAR, VARCHAR2, NCHAR, NVARCHAR2, CLOB, or NCLOB. The string returned is of VARCHAR2 data type if char is a character data type, NVARCHAR2 if char is a national character data type, and a LOB if char is a LOB data type.
+
+SELECT LTRIM('<=====>BROWNING<=====>', '<>=') "LTRIM Example"
+  FROM DUAL;
+
+LTRIM Example
+---------------
+BROWNING<=====>
+
+RTRIM removes from the right end of char all of the characters that appear in set. This function is useful for formatting the output of a query.
+
+If you do not specify set, then it defaults to a single blank. RTRIM works similarly to LTRIM.
+
+Both char and set can be any of the data types CHAR, VARCHAR2, NCHAR, NVARCHAR2, CLOB, or NCLOB. The string returned is of VARCHAR2 data type if char is a character data type, NVARCHAR2 if char is a national character data type, and a LOB if char is a LOB data type.
+
+SELECT RTRIM('<=====>BROWNING<=====>', '<>=') "RTRIM Example"
+  FROM DUAL;
+
+RTRIM Example
+---------------
+<=====>BROWNING
+
+4.LTRIM: Removes characters from the left (leading) side of a string.
+RTRIM: Removes characters from the right (trailing) side of a string.
+TRIM: Removes characters from both ends (leading and trailing) of a string. By default, if no character is specified, these functions remove spaces.
+
+SELECT TRIM('-' FROM '---Hello World---') AS result FROM dual;
+SELECT TRIM(LEADING '-' FROM '---Hello World---') AS result FROM dual;
+SELECT TRIM(TRAILING '-' FROM '---Hello World---') AS result FROM dual;
+
+SELECT LTRIM('---Hello World---', '-') AS result FROM dual;
+SELECT RTRIM('---Hello World---', '-') AS result FROM dual;
+
+5.The REPLACE function is used to search for a substring within a string and replace it with another substring.
+
+Syntax:
+REPLACE(source_string, search_string, replacement_string)
+source_string: The original string.
+search_string: The substring you want to find.
+replacement_string: The substring that will replace each occurrence of the search_string.
+How It Works:
+REPLACE scans the source string for all occurrences of the search string and replaces them with the replacement string. This is useful when the substring to be replaced can be more than one character or when the replacement text is longer or shorter than the search text.
+
+Example:
+SELECT REPLACE('Hello World', 'World', 'Oracle') AS result
+FROM dual;
+Result: 'Hello Oracle'
+
+TRANSLATE
+Purpose:
+The TRANSLATE function performs character-by-character substitution in a string. It maps each character in the source string to a corresponding character in the replacement set.
+
+Syntax:
+TRANSLATE(source_string, from_string, to_string)
+source_string: The original string.
+from_string: A set of characters to be replaced.
+to_string: A set of characters to replace them with. Each character in from_string is replaced by the character in the same position in to_string.
+How It Works:
+TRANSLATE examines each character in the source string. If that character exists in the from_string, it is replaced by the character at the corresponding position in to_string. If a character in from_string does not have a corresponding character in to_string (i.e. to_string is shorter), then that character is removed from the result.
+
+Example:
+SELECT TRANSLATE('123-456-7890', '1234567890', 'ABCDEFGHIJ') AS result
+FROM dual;
+In this example, the digits are replaced by corresponding letters:
+
+'1' → 'A'
+'2' → 'B'
+'3' → 'C', and so on.
+Result: 'ABC-DEF-GHIJ'
+(Note: the hyphens are preserved because they are not part of the mapping.)
+
+Queries:-
+SELECT DISTINCT e.DEPARTMENT_ID, j.JOB_TITLE
+FROM EMPLOYEES_TRAINING e
+JOIN JOBS_TRAINING j ON e.JOB_ID = j.JOB_ID;
+
+select * from employees_training where department_id != 2001;
+
+--The TO_DATE('01-JAN-1991', 'DD-MON-YYYY') function converts the string into a date format.
+SELECT *
+FROM EMPLOYEES_TRAINING
+WHERE HIRE_DATE < TO_DATE('01-JAN-1991', 'DD-MON-YYYY');
+
+
+select avg(sal) from employees_training;
+select * from departments_training;
+select * from jobs_training;
+
+SELECT AVG(SALARY) AS AVG_ANALYST_SALARY
+FROM EMPLOYEES_TRAINING e
+JOIN JOBS_TRAINING j ON e.JOB_ID = j.JOB_ID
+WHERE j.JOB_TITLE = 'Analyst';
