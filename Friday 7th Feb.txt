@@ -1,0 +1,169 @@
+1.The CASE keyword in Oracle SQL is used to perform conditional logic within SQL queries, similar to an IF-ELSE statement in programming.
+
+--Simple case
+SELECT first_name,
+       department_id,
+       CASE department_id
+           WHEN 10 THEN 'Finance'
+           WHEN 20 THEN 'HR'
+           WHEN 30 THEN 'IT'
+           ELSE 'Other'
+       END AS department_name
+FROM employees_training;
+
+SELECT first_name,
+       salary,
+       CASE 
+           WHEN salary < 3000 THEN 'Low'
+           WHEN salary BETWEEN 3000 AND 7000 THEN 'Medium'
+           WHEN salary > 7000 THEN 'High'
+           ELSE 'Unknown'
+       END AS salary_level
+FROM employees_training;
+
+--Dynamic Column Calculations
+SELECT first_name, salary,
+       CASE 
+           WHEN salary > 5000 THEN salary * 1.1
+           ELSE salary
+       END AS adjusted_salary
+FROM employees_training;
+
+--sort rows conditionally
+SELECT first_name, salary
+FROM employees_training
+ORDER BY 
+       CASE 
+           WHEN salary > 7000 THEN 1
+           WHEN salary BETWEEN 3000 AND 7000 THEN 2
+           ELSE 3
+       END;
+
+--Grouping data conditionally
+SELECT department_id,
+       CASE 
+           WHEN COUNT(*) > 5 THEN 'Large Department'
+           ELSE 'Small Department'
+       END AS dept_size
+FROM employees_training
+GROUP BY department_id;
+
+2.Both NVL and NVL2 are Oracle functions used to handle NULL values, but they work differently.
+
+NVL(expression, replacement_value)
+NVL2(EXPRESSION,if_not_null,if_null)
+
+create table x (id number);
+insert into x values (NULL);
+insert into x values (1);
+SELECT NVL(id, 0) AS ID FROM x; --  if id is null then 0 else id
+
+select nvl2(id,100,0) as ID from x; -- if id is null then 0 else it is 100
+
+
+3.The DECODE function in Oracle SQL is similar to a simple CASE statement.
+DECODE is an IF-THEN-ELSE function that works only with equality conditions.
+
+SELECT 
+    employee_id, 
+    first_name, 
+    department_id, 
+    DECODE(department_id, 
+           10, 'Finance', 
+           20, 'HR', 
+           30, 'IT', 
+           'Other') AS department_name
+FROM employees_training;
+
+4.The COALESCE function in Oracle is used to return the first non-null expression in a list of expressions.
+
+The COALESCE function checks each column (in the order they are listed) for each row.
+It returns the first non-null value it encounters for each row.
+
+SELECT COALESCE(NULL, NULL, 'Hello', 'World') AS result FROM dual;
+create table y (id number,name varchar2(20),name2 varchar2(20));
+insert into y values (1,NULL,'Ashu');
+insert into y values (1,'Tosh',NULL);
+
+select coalesce(name,name2) from y;
+
+5.IN-Checks if a value is in a list or subquery.
+not in-Checks if a value is not in a list or subquery.
+exists:-Checks if the subquery returns any rows.
+not exists:-Checks if the subquery returns no rows.
+
+CREATE TABLE y (
+    id NUMBER,
+    name VARCHAR2(20),
+    name2 VARCHAR2(20)
+);
+
+INSERT INTO y VALUES (1, NULL, 'Ashu');
+INSERT INTO y VALUES (2, 'Tosh', NULL);
+INSERT INTO y VALUES (3, 'Alex', 'Smith');
+
+SELECT * 
+FROM y 
+WHERE id IN (1, 2);
+
+SELECT * 
+FROM y 
+WHERE id NOT IN (1, 2);
+
+SELECT * 
+FROM y a
+WHERE EXISTS (
+    SELECT 1
+    FROM y b
+    WHERE b.id = a.id
+    AND b.id = 2
+);
+
+SELECT * 
+FROM y a
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM y b
+    WHERE b.id = a.id
+    AND b.id = 2
+);
+
+6.Types of views:-
+Inline views:-An inline view is not a permanent database object but a subquery that appears in the FROM clause of a SQL statement. It behaves like a temporary view for that particular query execution.
+SELECT d.department_name, dept_avg.avg_salary 
+FROM (SELECT department_id, AVG(salary) AS avg_salary 
+      FROM employees_training 
+      GROUP BY department_id) dept_avg
+JOIN departments_training d 
+ON dept_avg.department_id = d.department_id;
+
+Forced View:-A force view is created even if the base table(s) do not exist at the time of creation
+CREATE FORCE VIEW rampup AS 
+SELECT employee_id, first_name, last_name FROM ravi;
+
+logical view:-A logical view is the standard type of Oracle view that represents a logical subset or transformation of the data in base tables
+
+Materialized view:-A materialized view is a physical copy (snapshot) of the result of a query. Unlike regular views, it stores data persistently and can be refreshed periodically to update the data. 
+
+CREATE MATERIALIZED VIEW emp_salary_summary 
+BUILD DEFERRED 
+REFRESH complete ON DEMAND 
+AS 
+SELECT department_id, AVG(salary) AS avg_salary 
+FROM employees_training 
+GROUP BY department_id;
+
+CREATE MATERIALIZED VIEW emp_salary_summary 
+BUILD IMMEDIATE 
+REFRESH COMPLETE ON DEMAND 
+AS 
+SELECT department_id, AVG(salary) AS avg_salary 
+FROM employees_training 
+GROUP BY department_id;
+
+
+select * from emp_salary_summary;
+
+drop materialized view emp_salary_summary;
+
+EXEC DBMS_MVIEW.REFRESH('EMP_SALARY_SUMMARY');
