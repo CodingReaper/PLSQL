@@ -1,0 +1,36 @@
+In Oracle Essbase, dimensions are classified as sparse or dense based on how data is stored and accessed.
+
+1. Dense Dimension
+A dimension is considered dense if most of its possible data cells contain data.
+Essbase stores dense data more compactly since most of its cells are filled.
+Example: "Time" is often a dense dimension because every month (Jan, Feb, etc.) usually has data.
+2. Sparse Dimension
+A dimension is sparse when most of its possible data cells are empty.
+Essbase does not store empty cells explicitly, which helps save space.
+Example: "Products" or "Customers" are often sparse because not every product is sold in every region.
+When to Use Sparse vs. Dense?
+Use Sparse for Large, Scattered Data: If a dimension has a large number of members but only a few values per combination, making it sparse improves performance and saves storage.
+Use Dense for Compact, Regular Data: If a dimension has values for most intersections, making it dense reduces fragmentation and speeds up calculations.
+
+In Essbase, data storage is organized into two levels:
+
+Index File → Keeps track of where each data block is stored.
+Data Block → Stores the actual values of dense dimensions.
+How It Works:
+Each unique combination of sparse dimension members creates one data block.
+The Essbase index file keeps track of where this block is stored.
+That block then stores all values for the dense dimensions.
+Example: Understanding Index to Data Block Mapping
+Assume We Have:
+✅ Sparse Dimensions:
+
+Product → (A, B, C)
+Region → (East, West)
+✅ Dense Dimensions:
+Time → (Jan, Feb, Mar)
+Measures → (Revenue, Profit)
+
+How This Helps Performance:
+🔹 Fewer data blocks = Faster retrieval (since all related dense data is stored together).
+🔹 No empty blocks (if a sparse combination has no data, no block is created, saving space).
+
