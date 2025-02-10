@@ -1,0 +1,187 @@
+The WITH keyword in Oracle SQL is used to define a temporary named result set (Common Table Expression - CTE), which can be referenced multiple times within a query. This improves readability, reusability, and performance.
+
+WITH high_salary_employees AS (
+    SELECT employee_id, first_name, salary
+    FROM employees_training
+    WHERE salary > 5000
+)
+SELECT * FROM high_salary_employees;
+
+WITH department_salaries AS ( -- calculates avg salary per department
+    SELECT department_id, AVG(salary) AS avg_salary
+    FROM employees_training
+    GROUP BY department_id
+),
+high_paid_employees AS ( --finds those employees whose salary is greater than their department average.
+    SELECT e.employee_id, e.first_name, e.salary, d.avg_salary
+    FROM employees_training e
+    JOIN department_salaries d ON e.department_id = d.department_id
+    WHERE e.salary > d.avg_salary
+)
+SELECT * FROM high_paid_employees;
+
+
+The MERGE statement in Oracle SQL is used for upserting data, meaning it inserts, updates, or deletes data based on a condition. It's commonly used for data synchronization between two tables. mostly used for data syncing between 2 tables
+
+CREATE TABLE emp1 (
+    emp_id NUMBER PRIMARY KEY,
+    first_name VARCHAR2(50),
+    salary NUMBER
+);
+
+CREATE TABLE emp2 (
+    emp_id NUMBER PRIMARY KEY,
+    first_name VARCHAR2(50),
+    salary NUMBER
+);
+
+INSERT INTO emp1 VALUES (101, 'John', 5000);
+INSERT INTO emp1 VALUES (102, 'Alice', 7000);
+
+-- New employees in emp2 (some existing, some new)
+INSERT INTO emp2 VALUES (102, 'Alice', 8000); -- Updated Salary
+INSERT INTO emp2 VALUES (103, 'Bob', 6000);   -- New Employee
+
+
+MERGE INTO emp1 t -- dest table
+USING emp2 s --src table
+ON (t.emp_id = s.emp_id)
+WHEN MATCHED THEN 
+    UPDATE SET t.salary = s.salary
+WHEN NOT MATCHED THEN 
+    INSERT (emp_id, first_name, salary) 
+    VALUES (s.emp_id, s.first_name, s.salary);
+
+MERGE INTO emp1 t
+USING emp2 s
+ON (t.emp_id = s.emp_id)
+WHEN MATCHED THEN 
+    UPDATE SET t.salary = s.salary
+WHEN NOT MATCHED THEN 
+    DELETE WHERE t.salary < 5000;
+
+
+-- see the execution Plan
+EXPLAIN PLAN FOR 
+SELECT emp_id, emp_name 
+FROM emp1 e
+WHERE EXISTS (
+    SELECT 1 FROM emp2 d WHERE d.dept_id = e.dept_id
+);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+In general, if the outer query returns a large number of rows and the inner query returns a small number of rows, IN would likely be more efficient. If the outer query returns a small number of rows and the inner query returns a large number of rows, EXISTS would likely be more efficient.
+IN: The inner query runs first and retrieves all values, then compares them with the outer query. This is inefficient for large result sets.
+EXISTS: Works as a correlated subquery, meaning it stops checking once it finds a match. This is faster when dealing with large inner queries.
+
+
+-- Create Employees Table (emp1)
+CREATE TABLE emp1 (
+    emp_id NUMBER PRIMARY KEY,
+    emp_name VARCHAR2(50),
+    dept_id NUMBER
+);
+
+-- Insert Sample Data
+INSERT INTO emp1 VALUES (1, 'Alice', 10);
+INSERT INTO emp1 VALUES (2, 'Bob', 20);
+INSERT INTO emp1 VALUES (3, 'Charlie', 30);
+INSERT INTO emp1 VALUES (4, 'David', 10);
+INSERT INTO emp1 VALUES (5, 'Eve', 40);
+
+-- Create Departments Table (emp2)
+CREATE TABLE emp2 (
+    dept_id NUMBER PRIMARY KEY,
+    dept_name VARCHAR2(50)
+);
+
+-- Insert Sample Data
+INSERT INTO emp2 VALUES (10, 'HR');
+INSERT INTO emp2 VALUES (20, 'IT');
+INSERT INTO emp2 VALUES (30, 'Sales');
+INSERT INTO emp2 VALUES (50, 'Finance');
+
+COMMIT;
+
+
+Using IN
+🎯 Find employees whose department exists in emp2
+sql
+Copy
+Edit
+SELECT emp_id, emp_name 
+FROM emp1 
+WHERE dept_id IN (SELECT dept_id FROM emp2);
+🔎 How Many Comparisons?
+The inner query:
+🔹 (SELECT dept_id FROM emp2) retrieves {10, 20, 30, 50} → 4 rows.
+The outer query:
+🔹 Compares each row in emp1 (5 rows) against these 4 values.
+🔹 Total comparisons = 5 (emp1 rows) × 4 (emp2 results) = **20 comparisons**.
+🛑 Issue with IN:
+
+Oracle first retrieves all dept_id values from emp2 and stores them in memory.
+If emp2 is large, this storage increases execution time.
+2️⃣ Using EXISTS
+🎯 Find employees whose department exists in emp2
+sql
+Copy
+Edit
+SELECT emp_id, emp_name 
+FROM emp1 e
+WHERE EXISTS (
+    SELECT 1 FROM emp2 d WHERE d.dept_id = e.dept_id
+);
+🔎 How Many Comparisons?
+The outer query scans emp1 (5 rows).
+For each row in emp1, it checks if at least 1 match exists in emp2:
+Alice (10) → Exists in emp2 ✅ (1 check, stops)
+Bob (20) → Exists in emp2 ✅ (1 check, stops)
+Charlie (30) → Exists in emp2 ✅ (1 check, stops)
+David (10) → Exists in emp2 ✅ (1 check, stops)
+Eve (40) → Not in emp2 ❌ (Full scan on emp2)
+🔹 Total comparisons = Only 5 checks instead of 20!
+
+
+Exceptions in Oracle PL/SQL
+In Oracle PL/SQL, exceptions are used to handle errors that occur during program execution. When an error occurs, an exception is raised and can be handled using the EXCEPTION block.
+Predefined Exceptions (System-Defined)
+These are built-in exceptions raised automatically by Oracle (e.g., NO_DATA_FOUND, ZERO_DIVIDE, TOO_MANY_ROWS).
+
+
+Non-Predefined Exceptions:-Some exceptions exist in Oracle but don’t have predefined names. They have error numbers but must be explicitly declared using PRAGMA EXCEPTION_INIT.
+
+User Defined Exceptions:-These are custom exceptions created by the user using EXCEPTION and RAISE.
+
+exceptions are a special kind of object, declared using the EXCEPTION keyword. Unlike variables, exceptions do not store values but act as error handlers.
+
+
+DECLARE
+    insufficient_balance EXCEPTION;(exception handler variable object)
+    a NUMBER := 500;
+    b NUMBER := 1000;
+BEGIN
+    IF b > a THEN
+        RAISE insufficient_balance; -- Raise user-defined exception
+    END IF;
+EXCEPTION
+    WHEN insufficient_balance THEN
+        DBMS_OUTPUT.PUT_LINE('Withdrawal amount exceeds balance!');
+END;
+/
+
+DECLARE
+    v_num NUMBER := 10;
+    v_den NUMBER := 0;
+    v_result NUMBER;
+BEGIN
+    v_result := v_num / v_den;  -- This raises ZERO_DIVIDE error
+EXCEPTION
+    WHEN ZERO_DIVIDE THEN
+        DBMS_OUTPUT.PUT_LINE('Cannot divide by zero!');
+END;
+/
+
+
+
