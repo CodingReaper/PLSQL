@@ -1,0 +1,47 @@
+If you want to add new records without deleting existing ones, use:
+
+LOAD DATA
+INFILE 'data.txt'
+APPEND INTO TABLE employees
+FIELDS TERMINATED BY ',' 
+OPTIONALLY ENCLOSED BY '"'
+(NAME, JOB, SAL INTEGER EXTERNAL, DEPTNO INTEGER EXTERNAL)
+
+If you want to delete all existing rows before inserting new ones, use:
+
+LOAD DATA
+INFILE 'data.txt'
+TRUNCATE INTO TABLE employees
+FIELDS TERMINATED BY ',' 
+OPTIONALLY ENCLOSED BY '"'
+(NAME, JOB, SAL INTEGER EXTERNAL, DEPTNO INTEGER EXTERNAL)
+
+If you want to delete only matching rows (based on primary key or unique key) and insert new data,
+
+LOAD DATA
+INFILE 'data.txt'
+REPLACE INTO TABLE employees
+FIELDS TERMINATED BY ',' 
+OPTIONALLY ENCLOSED BY '"'
+(NAME, JOB, SAL INTEGER EXTERNAL, DEPTNO INTEGER EXTERNAL)
+
+
+--Only Those data i need
+LOAD DATA
+INFILE 'data.txt'
+INSERT INTO TABLE employees
+WHEN NAME = 'SCOTT'
+FIELDS TERMINATED BY ',' 
+OPTIONALLY ENCLOSED BY '"'
+(
+    NAME CHAR, 
+    JOB CHAR, 
+    SAL INTEGER EXTERNAL, 
+    DEPTNO INTEGER EXTERNAL
+)
+
+sqlldr userid=reaper/reaperop control=emp.ctl log=logfile.log bad=bad_rows.bad discard=discard_rows.dsc
+
+bad file(.bad):-This is where the sql loader Stores the rows that failed the insert due to data errors
+
+discard file(.dsc):-This is where sql loader stored the rows that are intentionally skipped bcz of that they did not meet the 'WHEN' Condition.
