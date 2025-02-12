@@ -1,0 +1,20 @@
+Essbase products incorporate powerful architectural features to handle a wide range of analytic
+applications across large multiuser environments. Figure 1 provides a high-level view of the
+information flow between the three tiers of the Essbase architecture. The client tier (on the left)
+includes Essbase Server clients, such as Oracle Hyperion Smart View for Office and
+Administration Services Console. The middle tier (in the center) includes services, such as Oracle
+Hyperion Provider Services and Oracle Essbase Administration Services. The database tier (on
+the right) is made up of Essbase Servers. Communication between the client and middle tiers,
+and the middle and database tiers, is through HTTP. Communication between the client and
+database tiers is through TCP/IP or HTTP. Communication between data sources and the
+metadata catalog with the middle and database tiers is through ODBC and JDBC drivers.
+
+In an Essbase architecture, an RDBMS source is used as the primary data origin for loading data into an Essbase cube, 
+allowing users to leverage the detailed transactional data stored in a relational database for analysis within Essbase's multidimensional structure, 
+which is optimized for fast aggregations and complex queries across large datasets; 
+essentially, it acts as the "source of truth" for data that is then transformed and aggregated within the Essbase cube for business intelligence purposes. 
+
+In Essbase, a metadata catalog acts as a central repository that stores all the structural information about an Essbase application, 
+including dimension names, member properties, hierarchies, and security settings, 
+allowing users to easily access and manage the metadata across different applications within an organization, 
+essentially creating a single source of truth for data analysis and reporting. 
