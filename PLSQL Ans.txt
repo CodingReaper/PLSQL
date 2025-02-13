@@ -1,0 +1,183 @@
+CREATE TABLE employees (
+    id NUMBER PRIMARY KEY,
+    name VARCHAR2(50),
+    department VARCHAR2(50),
+    salary NUMBER
+);
+
+begin
+	INSERT INTO employees VALUES (101, 'John Doe', 'HR', 50000);
+	INSERT INTO employees VALUES (102, 'Jane Smith', 'IT', 60000);
+	INSERT INTO employees VALUES (103, 'Mark Brown', 'Finance', 70000);
+	INSERT INTO employees VALUES (104, 'Emily Davis', 'Marketing', 55000);
+end;
+
+create or replace function tot_sal
+return number is 
+	tot number := 0;
+begin
+	select sum(salary) into tot from employees;
+	return tot;
+end;
+
+select tot_sal() as Total_Salary from dual;
+
+CREATE OR REPLACE FUNCTION get_bonus(emp_salary NUMBER)
+RETURN NUMBER IS
+    bonus NUMBER;
+BEGIN
+    bonus := emp_salary * 0.10; -- 10% bonus
+    RETURN bonus;
+END;
+
+select get_bonus((select salary from employees where id = 101)) as Bonus from dual;
+
+
+DECLARE 
+    v_counter NUMBER := 1;
+BEGIN
+    WHILE v_counter <= 5 LOOP
+        DBMS_OUTPUT.PUT_LINE('Number: ' || v_counter);
+        v_counter := v_counter + 1;
+    END LOOP;
+END;
+
+DECLARE
+    v_counter NUMBER := 1;
+BEGIN
+    LOOP
+        DBMS_OUTPUT.PUT_LINE('Iteration: ' || v_counter);
+        v_counter := v_counter + 1;
+        EXIT WHEN v_counter > 5;
+    END LOOP;
+END;
+
+SELECT * FROM ALL_OBJECTS WHERE OBJECT_TYPE IN ('FUNCTION','PROCEDURE','PACKAGE');
+
+
+CREATE OR REPLACE TRIGGER display_salary_changes 
+BEFore INSERT OR UPDATE ON employees 
+FOR EACH ROW 
+WHEN (NEW.ID > 0) 
+DECLARE 
+   sal_diff number; 
+BEGIN 
+   sal_diff := :NEW.salary  - :OLD.salary; 
+   dbms_output.put_line('Old salary: ' || :OLD.salary); 
+   dbms_output.put_line('New salary: ' || :NEW.salary); 
+   dbms_output.put_line('Salary difference: ' || sal_diff); 
+END;
+
+update employees set salary = 100000 where id = 101;
+
+
+CREATE OR REPLACE PACKAGE employee_pkg AS 
+    -- Function to get total salary
+    FUNCTION tot_sal RETURN NUMBER;
+    
+    -- Function to get 10% bonus of a salary
+    FUNCTION get_bonus(emp_salary NUMBER) RETURN NUMBER;
+END employee_pkg;
+/
+
+CREATE OR REPLACE PACKAGE BODY employee_pkg AS 
+
+    -- Function to calculate total salary
+    FUNCTION tot_sal RETURN NUMBER IS
+        tot NUMBER := 0;
+    BEGIN
+        SELECT SUM(salary) INTO tot FROM employees;
+        RETURN tot;
+    END tot_sal;
+
+    -- Function to calculate 10% bonus
+    FUNCTION get_bonus(emp_salary NUMBER) RETURN NUMBER IS
+        bonus NUMBER;
+    BEGIN
+        bonus := emp_salary * 0.10;
+        RETURN bonus;
+    END get_bonus;
+
+END employee_pkg;
+/
+
+SELECT employee_pkg.tot_sal() AS Total_Salary FROM dual;
+
+SELECT OBJECT_NAME, OBJECT_TYPE, STATUS 
+FROM USER_OBJECTS 
+WHERE OBJECT_NAME = 'EMPLOYEE_PKG';
+
+DROP FUNCTION tot_sal;
+DROP FUNCTION get_bonus;
+
+
+CREATE TABLE employees (
+    employee_id NUMBER PRIMARY KEY,
+    last_name VARCHAR2(50) NOT NULL,
+    manager_id NUMBER
+);
+
+begin
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (101, 'Kochhar', 100);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (108, 'Greenberg', 101);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (109, 'Faviet', 108);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (110, 'Chen', 108);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (111, 'Sciarra', 108);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (112, 'Urman', 108);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (113, 'Popp', 108);
+end;
+
+SELECT employee_id, last_name, manager_id, LEVEL
+FROM employees
+START WITH manager_id = 100
+CONNECT BY PRIOR employee_id = manager_id;
+
+ Understanding LEVEL
+1️⃣ LEVEL 1 → 101 (Kochhar) (Top Manager)
+2️⃣ LEVEL 2 → 108 (Greenberg) (Reports to Kochhar)
+3️⃣ LEVEL 3 → 109, 110, 111, 112, 113 (Report to Greenberg)
+
+
+CREATE TABLE employees (
+    employee_id NUMBER PRIMARY KEY,
+    last_name VARCHAR2(50) NOT NULL,
+    manager_id NUMBER
+);
+
+begin
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (101, 'Kochhar', 100);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (108, 'Greenberg', 101);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (109, 'Faviet', 108);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (110, 'Chen', 108);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (111, 'Sciarra', 108);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (112, 'Urman', 108);
+INSERT INTO employees (employee_id, last_name, manager_id) VALUES (113, 'Popp', 108);
+end;
+
+insert into employees values (114,'Kochhar',100);
+insert into employees values (115,'Greenberg',101);
+
+
+select * from employees;
+
+DELETE FROM employees
+WHERE ROWID NOT IN (
+    SELECT MIN(ROWID)
+    FROM employees
+    GROUP BY last_name, manager_id
+);
+
+create table x(
+    a number,
+    b varchar2(20)
+);
+
+insert into x values (1,'Ashu');
+insert into x values (1,'Ashu');
+
+CREATE TABLE x2 AS 
+SELECT DISTINCT * FROM x;
+drop table x;
+select * from x;
+
+alter table x2 rename to x;
