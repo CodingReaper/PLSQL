@@ -1,0 +1,412 @@
+1.-- Package Specification
+CREATE OR REPLACE PACKAGE my_package AS
+    PROCEDURE public_proc;
+END my_package;
+/
+
+-- Package Body
+CREATE OR REPLACE PACKAGE BODY my_package AS
+    PROCEDURE private_proc IS
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('Private');
+    END private_proc;
+
+    PROCEDURE public_proc IS
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('Public');
+        private_proc;
+    END public_proc;
+
+END my_package;
+/
+
+exec my_package.public_proc;
+
+2.BULK COLLECT and FORALL are powerful performance optimization techniques in Oracle PL/SQL. Here’s a detailed explanation with a well-structured example:
+
+🔍 Why BULK COLLECT and FORALL are Faster
+Context Switching: PL/SQL runs in the PL/SQL engine, while SQL runs in the SQL engine. Every time PL/SQL executes a SQL statement, there's a context switch between the two engines. BULK COLLECT and FORALL reduce these switches by processing multiple rows in one go.
+Efficiency: Fewer SQL statements mean faster execution, especially when dealing with large datasets
+
+Performance Benefits
+If you processed 1000 rows without BULK COLLECT or FORALL, you'd have 1000 context switches.
+With BULK COLLECT and FORALL, you'd have just 1 context switch, making operations significantly faster.
+
+DECLARE
+    TYPE emp_table_type IS TABLE OF employees%ROWTYPE;
+    emp_list emp_table_type;
+BEGIN
+    SELECT * BULK COLLECT INTO emp_list FROM employees;
+	DBMS_OUTPUT.PUT_LINE(emp_list.count);
+    FOR i IN emp_list.FIRST .. emp_list.LAST LOOP
+        DBMS_OUTPUT.PUT_LINE('ID: ' || emp_list(i).emp_id || ', Name: ' || emp_list(i).emp_name || ', Salary: ' || emp_list(i).salary);
+    END LOOP;
+END;
+/
+
+DECLARE
+    TYPE salary_table_type IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+    TYPE emp_id_table_type IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+
+    emp_salaries salary_table_type;
+    emp_ids emp_id_table_type;
+BEGIN
+    emp_salaries(1) := 5500;
+    emp_salaries(2) := 7500;
+    emp_salaries(3) := 6500;
+    emp_ids(1) := 1;
+    emp_ids(2) := 2;
+    emp_ids(3) := 3;
+    FORALL idx IN 1..3
+        UPDATE employees
+        SET salary = emp_salaries(idx)
+        WHERE emp_id = idx;
+
+    DBMS_OUTPUT.PUT_LINE('Salaries updated successfully!');
+END;
+/
+
+PLS_INTEGER and BINARY_INTEGER are supported as collection indexes.
+INTEGER is a SQL data type and cannot be used for indexing associative arrays
+
+https://www.tutorialspoint.com/plsql/plsql_collections.htm
+
+https://blogs.oracle.com/connect/post/bulk-processing-with-bulk-collect-and-forall
+
+https://docs.oracle.com/cd/B13789_01/appdev.101/b10807/13_elems021.htm
+
+3.DECLARE
+    a NUMBER := 7000;
+BEGIN
+    IF a >= 10000 THEN
+        DBMS_OUTPUT.PUT_LINE('heheh');
+    ELSIF a >= 5000 THEN
+        DBMS_OUTPUT.PUT_LINE('hahaha');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('heheehehhaahhhha');
+    END IF;
+END;
+/
+
+4.In Oracle PL/SQL, REF CURSORs are a special type of cursor that allows you to return a result set from a query and pass it between different PL/SQL programs. Unlike regular cursors, REF CURSORs are more flexible because they can be opened dynamically at runtime and passed as parameters to procedures and functions.
+https://www.geeksforgeeks.org/plsql-cursor-variable-with-ref-cursor/
+
+
+drop table employees;
+CREATE TABLE employees (
+    employee_id NUMBER PRIMARY KEY,
+    first_name  VARCHAR2(50),
+    last_name   VARCHAR2(50),
+    salary      NUMBER,
+    department_id NUMBER
+);
+
+begin 
+INSERT INTO employees VALUES (1, 'John', 'Doe', 5000, 10);
+INSERT INTO employees VALUES (2, 'Jane', 'Smith', 6000, 10);
+INSERT INTO employees VALUES (3, 'Robert', 'Brown', 5500, 20);
+INSERT INTO employees VALUES (4, 'Emily', 'Davis', 7500, 20);
+INSERT INTO employees VALUES (5, 'Michael', 'Johnson', 7000, 30);
+INSERT INTO employees VALUES (6, 'Sarah', 'Wilson', 8000, 30);
+end;
+
+DECLARE
+    TYPE emp_ref_cursor IS REF CURSOR;
+    emp_cursor emp_ref_cursor;
+    emp_record employees%ROWTYPE;
+BEGIN
+    OPEN emp_cursor FOR 'SELECT * FROM employees WHERE department_id = ' || 20;
+
+    LOOP
+        FETCH emp_cursor INTO emp_record;
+        EXIT WHEN emp_cursor%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(emp_record.first_name || ' - ' || emp_record.salary);
+    END LOOP;
+
+    CLOSE emp_cursor;
+END;
+/
+
+
+CREATE OR REPLACE PROCEDURE get_employees_by_department(
+    p_dept_id IN NUMBER,
+    p_cursor OUT SYS_REFCURSOR
+) AS
+BEGIN
+    OPEN p_cursor FOR
+    SELECT first_name, last_name, salary FROM employees WHERE department_id = p_dept_id;
+END;
+/
+
+DECLARE
+    emp_cursor SYS_REFCURSOR;
+    f_name VARCHAR2(50);
+    l_name VARCHAR2(50);
+    sal NUMBER;
+BEGIN
+    get_employees_by_department(10, emp_cursor);
+
+
+
+Exercise:-
+For this question no 1 i can use previous table just up.
+CREATE OR REPLACE TRIGGER prevent_update_during_hours
+BEFORE UPDATE OF salary ON employees
+FOR EACH ROW
+BEGIN
+    -- Check current time
+    IF TO_CHAR(SYSTIMESTAMP, 'HH24') BETWEEN '17' AND '18' THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Updates to the salary column are not allowed between 5 PM and 6 PM!');
+    END IF;
+END;
+/
+UPDATE employees SET salary = 6000 WHERE employee_id = 1;
+
+select to_char(systimestamp,'hh24') from dual;
+
+    LOOP
+        FETCH emp_cursor INTO f_name, l_name, sal;
+        EXIT WHEN emp_cursor%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(f_name || ' ' || l_name || ' - ' || sal);
+    END LOOP;
+
+    CLOSE emp_cursor;
+END;
+/
+
+2.In Oracle PL/SQL triggers, :OLD and :NEW are special pseudorecords used to access the values of table columns before and after a data change:
+
+:OLD: Refers to the value of a column before an INSERT, UPDATE, or DELETE operation.
+:NEW: Refers to the value of a column after an INSERT or UPDATE operation.
+
+
+CREATE TABLE employees (
+    emp_id NUMBER PRIMARY KEY,
+    emp_name VARCHAR2(100),
+    salary NUMBER,
+    job_title VARCHAR2(50)
+);
+
+INSERT INTO employees VALUES (101, 'John Doe', 50000, 'Developer');
+INSERT INTO employees VALUES (102, 'Jane Smith', 60000, 'Analyst');
+
+CREATE TABLE employee_audit (
+    audit_id NUMBER GENERATED ALWAYS AS IDENTITY,
+    emp_id NUMBER,
+    column_name VARCHAR2(50),
+    old_value VARCHAR2(100),
+    new_value VARCHAR2(100),
+    changed_by VARCHAR2(50),
+    change_date TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER trg_employee_audit
+AFTER UPDATE OF salary, job_title ON employees
+FOR EACH ROW
+DECLARE
+    v_user VARCHAR2(50);
+BEGIN
+    -- Get the current user
+    v_user := USER;
+
+    IF :OLD.salary != :NEW.salary THEN
+        INSERT INTO employee_audit (emp_id, column_name, old_value, new_value, changed_by)
+        VALUES (:NEW.emp_id, 'salary', TO_CHAR(:OLD.salary), TO_CHAR(:NEW.salary), v_user);
+    END IF;
+
+    IF :OLD.job_title != :NEW.job_title THEN
+        INSERT INTO employee_audit (emp_id, column_name, old_value, new_value, changed_by)
+        VALUES (:NEW.emp_id, 'job_title', :OLD.job_title, :NEW.job_title, v_user);
+    END IF;
+END;
+/
+
+-- Test the trigger
+UPDATE employees SET salary = 55000, job_title = 'Senior Developer' WHERE emp_id = 101;
+
+-- View the audit log
+SELECT * FROM employee_audit;
+select user from dual;
+
+
+
+3.CREATE TABLE sales (
+    sale_id NUMBER PRIMARY KEY,
+    sale_date DATE,
+    amount NUMBER,
+    running_total NUMBER
+);
+
+CREATE OR REPLACE TRIGGER trg_update_running_total
+BEFORE INSERT ON sales
+FOR EACH ROW
+DECLARE
+    v_last_total NUMBER := 0;
+BEGIN
+    -- Get the last running total from the table
+    SELECT NVL(MAX(running_total), 0) INTO v_last_total FROM sales;
+
+    -- Calculate the new running total
+    :NEW.running_total := v_last_total + :NEW.amount;
+END;
+/
+
+begin
+INSERT INTO sales (sale_id, sale_date, amount) VALUES (1, SYSDATE, 100);
+INSERT INTO sales (sale_id, sale_date, amount) VALUES (2, SYSDATE, 200);
+INSERT INTO sales (sale_id, sale_date, amount) VALUES (3, SYSDATE, 150);
+end;
+
+select * from sales;
+
+
+Exceptions:-
+1.
+declare
+	a number;
+begin
+	a := 'Ashu';
+exception
+	when value_error then
+		dbms_output.put_line(sqlerrm);
+end;
+
+2.
+create table x(a number unique);
+
+declare
+begin
+	insert into x values(1);
+	insert into x values(1);
+exception
+	when dup_val_on_index then
+		dbms_output.put_line(sqlerrm);
+end;
+
+select * from x;
+
+3.DECLARE
+    a NUMBER;
+BEGIN
+        a := TO_NUMBER('abc123');
+EXCEPTION
+    WHEN Value_error THEN
+        DBMS_OUTPUT.PUT_LINE('An Error :'|| SQLERRM);
+END;
+/
+
+Packages
+1.
+CREATE OR REPLACE PACKAGE math_utils AS
+  PROCEDURE calculate_factorial(p_num IN NUMBER, p_result OUT NUMBER);
+  FUNCTION is_prime(p_num IN NUMBER) RETURN VARCHAR2;
+END math_utils;
+/
+
+CREATE OR REPLACE PACKAGE BODY math_utils AS
+  PROCEDURE calculate_factorial(p_num IN NUMBER, p_result OUT NUMBER) IS
+  BEGIN
+    IF p_num < 0 THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Factorial not defined for negative numbers');
+    ELSIF p_num = 0 THEN
+      p_result := 1;
+    ELSE
+      DECLARE
+        temp NUMBER;
+      BEGIN
+        calculate_factorial(p_num - 1, temp);
+        p_result := p_num * temp;
+      END;
+    END IF;
+  END calculate_factorial;
+
+  FUNCTION is_prime(p_num IN NUMBER) RETURN VARCHAR2 IS
+    cnt NUMBER := 0;
+  BEGIN
+    IF p_num < 2 THEN
+      RETURN 'NO';
+    END IF;
+
+    FOR i IN 1..TRUNC(SQRT(p_num)) LOOP
+      IF MOD(p_num, i) = 0 THEN
+        cnt := cnt + 1;
+        IF p_num / i != i THEN
+          cnt := cnt + 1;
+        END IF;
+      END IF;
+    END LOOP;
+
+    IF cnt = 2 THEN
+      RETURN 'YES';
+    ELSE
+      RETURN 'NO';
+    END IF;
+  END is_prime;
+
+END math_utils;
+/
+
+DECLARE
+  v_fact NUMBER;
+  v_prime VARCHAR2(3);
+BEGIN
+  math_utils.calculate_factorial(6, v_fact);
+  DBMS_OUTPUT.PUT_LINE('Factorial of 6: ' || v_fact);
+
+  v_prime := math_utils.is_prime(29);
+  DBMS_OUTPUT.PUT_LINE('Is 29 prime? ' || v_prime);
+END;
+/ 
+
+
+2.CREATE OR REPLACE PACKAGE string_utils AS
+  PROCEDURE reverse_string(p_input IN VARCHAR2, p_output OUT VARCHAR2);
+  FUNCTION count_substring(p_input IN VARCHAR2, p_sub IN VARCHAR2) RETURN NUMBER;
+END string_utils;
+/
+
+CREATE OR REPLACE PACKAGE BODY string_utils AS
+  PROCEDURE reverse_string(p_input IN VARCHAR2, p_output OUT VARCHAR2) IS
+    v_len NUMBER := LENGTH(p_input);
+    v_reversed VARCHAR2(32767) := '';
+  BEGIN
+    FOR i IN REVERSE 1..v_len LOOP
+      v_reversed := v_reversed || SUBSTR(p_input, i, 1);
+    END LOOP;
+    p_output := v_reversed;
+  END reverse_string;
+
+  FUNCTION count_substring(p_input IN VARCHAR2, p_sub IN VARCHAR2) RETURN NUMBER IS
+    v_count NUMBER := 0;
+    v_start NUMBER := 1;
+  BEGIN
+    IF p_sub IS NULL OR p_input IS NULL THEN
+      RETURN 0;
+    END IF;
+
+    LOOP
+      v_start := INSTR(p_input, p_sub, v_start);
+      EXIT WHEN v_start = 0;
+      v_count := v_count + 1;
+      v_start := v_start + LENGTH(p_sub);
+    END LOOP;
+
+    RETURN v_count;
+  END count_substring;
+
+END string_utils;
+/
+
+-- Test the package
+DECLARE
+  v_reversed VARCHAR2(50);
+  v_count NUMBER;
+BEGIN
+  string_utils.reverse_string('hello', v_reversed);
+  DBMS_OUTPUT.PUT_LINE('Reversed string: ' || v_reversed);
+
+  v_count := string_utils.count_substring('helloworldhello', 'l');
+  DBMS_OUTPUT.PUT_LINE('Occurrences of "hello": ' || v_count);
+END;
+/
+
