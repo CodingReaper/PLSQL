@@ -1,0 +1,103 @@
+CREATE OR REPLACE PROCEDURE greet_user(p_name IN VARCHAR2) AS
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('Hello, ' || p_name || '!');
+END;
+
+exec greet_user('Ashu') ;
+
+BEGIN
+    greet_user('John');
+END;
+
+CREATE OR REPLACE PROCEDURE calculate_square(p_number IN NUMBER, p_result OUT NUMBER) AS
+BEGIN
+    p_result := p_number * p_number;
+END;
+
+DECLARE
+    v_square NUMBER;
+BEGIN
+    calculate_square(5, v_square);
+    DBMS_OUTPUT.PUT_LINE('Square: ' || v_square);
+END;
+
+CREATE OR REPLACE PROCEDURE double_number(p_num IN OUT NUMBER) AS
+BEGIN
+    p_num := p_num * 2;
+END;
+
+DECLARE
+    v_value NUMBER := 10;
+BEGIN
+    double_number(v_value);
+    DBMS_OUTPUT.PUT_LINE('Doubled value: ' || v_value);
+END;
+
+
+create or replace function summation(col_name in varchar2,t_name in varchar2) return number as
+	query_str varchar2(50);
+	x number;
+begin
+	query_str := 'select sum(' || col_name||')' || ' from ' || t_name ;
+	execute immediate query_str into x;
+	return x;
+exception
+    when others then
+    	dbms_output.put_line(sqlerrm);
+end;
+
+
+create table x (y number);
+insert into x values(5);
+
+select * from x;
+
+select summation('y','xx') from dual;
+
+
+
+the PRAGMA keyword is used to provide instructions to the compiler.
+Pragmas don't affect the runtime behavior directly but guide the compiler to optimize or handle code in specific ways.
+
+1. PRAGMA AUTONOMOUS_TRANSACTION
+It makes a block execute independently of the main transaction.
+Useful for logging or auditing even if the main transaction is rolled back.
+Example:
+CREATE OR REPLACE PROCEDURE log_message(p_message IN VARCHAR2) AS
+    PRAGMA AUTONOMOUS_TRANSACTION;
+BEGIN
+    INSERT INTO log_table (log_msg, log_date) 
+    VALUES (p_message, SYSDATE);
+    COMMIT; -- Commit is mandatory in autonomous transactions
+END;
+2. PRAGMA EXCEPTION_INIT
+It associates a user-defined exception with a specific Oracle error code.
+Example:
+DECLARE
+    invalid_user EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_user, -20001);
+BEGIN
+    RAISE_APPLICATION_ERROR(-20001, 'Custom error message');
+EXCEPTION
+    WHEN invalid_user THEN
+        DBMS_OUTPUT.PUT_LINE('Caught custom error!');
+END;
+3. PRAGMA SERIALLY_REUSABLE
+It helps optimize memory usage for packages that are only needed for the duration of a single call to the server.
+Example:
+CREATE OR REPLACE PACKAGE session_pkg IS
+    PRAGMA SERIALLY_REUSABLE;
+    g_counter NUMBER := 0;
+END session_pkg;
+4. PRAGMA INLINE (Oracle 11g and later)
+It suggests inlining or not inlining a subprogram to optimize performance.
+Example:
+DECLARE
+    FUNCTION add_nums(a IN NUMBER, b IN NUMBER) RETURN NUMBER IS
+    BEGIN
+        RETURN a + b;
+    END;
+    PRAGMA INLINE(add_nums, 'YES');
+BEGIN
+    DBMS_OUTPUT.PUT_LINE(add_nums(5, 10));
+END;
