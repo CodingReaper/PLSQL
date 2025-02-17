@@ -1,0 +1,44 @@
+//****************** GROOVY SCRIPT: ADD ACCOUNT MEMBERS TO DIRPNL ******************
+
+// Message bundle for error handling
+def mbUs = messageBundle([
+    "validation.AccountCode": "Invalid Account code. It must start with two letters followed by three digits: {0}",
+    "validation.AccountDesc": "Invalid Account description. Allowed: alphanumeric, underscores (_), hyphens (-), parentheses (()), or single quotes ('), max 150 chars: {0}",
+    "validation.ExistingAccount": "The account {0} already exists."
+])
+
+// Load the message bundle
+def mbl = messageBundleLoader(["en": mbUs])
+
+// Validate the Account Code (must start with two letters and three digits)
+validateRtp(rtps.AccountCode, /^[A-Za-z]{2}\d{3}$/, mbl, "validation.AccountCode", rtps.AccountCode)
+
+// Validate the Account Description (allowed chars: alphanumeric, underscore, hyphen, parentheses, single quotes)
+validateRtp(rtps.AccountDesc, /^[A-Za-z0-9 _\(\)\'-]{1,150}$/, mbl, "validation.AccountDesc", rtps.AccountDesc)
+
+// Get the DIRPNL cube and the Account dimension
+Cube cubeDIRPNL = operation.application.getCube("DIRPNL")
+Dimension dimAccount = operation.application.getDimension("Account")
+
+// Check if the member already exists
+if (dimAccount.hasMember(rtps.AccountCode, cubeDIRPNL)) {
+    throwVetoException(mbl, "validation.ExistingAccount", rtps.AccountCode)
+}
+
+// Get the parent member 'groovy_account'
+Member parentAccount = dimAccount.getMember("groovy_account")
+
+// Add the new account member under 'groovy_account'
+Member newAccount = parentAccount.addDynamicChild(rtps.AccountCode)
+
+// Set properties for the new account member
+def accountProps = newAccount.toMap()
+accountProps["Alias: Default"] = rtps.AccountCode + " - " + rtps.AccountDesc
+accountProps["Data Storage"] = "Never Share"
+
+// Save the member to the Account dimension
+dimAccount.saveMember(accountProps)
+
+println "New account member '${rtps.AccountCode}' added successfully under 'groovy_account'."
+
+//****************** END ******************
