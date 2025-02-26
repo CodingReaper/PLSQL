@@ -1,0 +1,119 @@
+Good Morning Everyone Today i will be talking about sdlc or software development lifecycle model which is a structured approach to software development. It ensures that our system or product id delivered efficiently with minimal risk and maximum quality. To make it more relatable it will be explaining each stage of sdlc model through a example of developing a employee expense tracking system for our finance team.
+
+1.Planning
+This is the stage where the project scope and feasibility is discussed all the stakeholders that is ba,product owner,and project manager they all come together to discuss what is the need for the project and what is the problem the project is solving.
+
+For example in our case:-
+They will discuss about 
+1.What are the problems the employees are facing while submitting their expenses?
+2.What are the different policies that can be integrated into the system?
+3.How can managers approve them?
+
+We also discuss the budget for the project and also the estimated timeline for the project. 
+
+2.Requirement gathering and analysis
+Here basically the sme,ba and the end users come together to discuss the functional and non functional requirement for the system or project.
+
+For example:-
+1.Should the employees upload the receipt for their expenses?
+2.Can we integrate this system to our current finance system?
+3.Should the manager approval be automated.
+
+all these types of questions are discussed here. At the end of this phase a SRS document is generated which includes all the functional and non functional requirement which will be further used by developers and testers in the later phase.
+
+3.Design
+After the requirements are clear the design phase starts. Here all the ui/ux designers and front engineers and system architect comes in to create a blue print for the system.
+
+For example here:-
+1.We will create a demo user friendly interface for the software.
+2.We will try to design a safe backend to store all our financial data.
+3.We will also try to create a rough system design for the system.
+
+Here we will also include the discussion about tech stack like for backend whether we will be using a java based framework,or phython based or js based and also for frontend like whether we will be using react or angular for frontend.
+
+4.Development
+Here in this stage the all the swe come together to write the actual code. Here while writing the code for a feature we will use either agile or waterfall or any other sdlc frameworks.
+
+For example here:
+1.Write the code for UI.
+2.Write all the api endpoints to connect different parts of a application together.
+3.Write all the code for backend to securely store our financial data.
+
+5.Testing 
+After the development stage the testers come into play. QA engineers perform various tests to ensure our system is fault tolerant and reliable at all times.
+
+They do testing like
+unit testing:-test each component 
+integration testing:_test whether each component work well with each other.
+uat:-Some users are given the access to system to use and tell whether it meets our business requirement or not.
+
+6.Deployment and maintenance
+After the testing deployment comes in here we can deploy our application in 2 ways
+1.beta deployment
+2.Full fledged deployement.
+
+after the deployment still developers monitor the performance of the system to fix any kind of bugs and push updates further based on user feedback.
+
+
+I would like to summarize sdlc by saying that it is a structured approach to software development where in each phase from planning to deployment a lot of people are involved like ba,sme,prod owner,prod manager,developers,testers all come together to create a fully functional system or application.
+
+In short sdlc helps us to deliver the system on time with all business requirements meet and ensures that the system will be fully functionally reliable when required.
+
+
+
+
+
+
+Agile:-Agile is a modern approach to software development. It prioritizes flexibility, collaboration and incremental improvements instead of using a strict step by step process of sdlc agile delivers small, functional parts of a product in short cycles called sprint.
+
+For example:-
+Let's take the same example of developing the employee expense tracking for the finance team then in agile would allow us to create a base version where user can upload their expenses.
+in the next sprint the user can add the automated workflow and in next user can integrate it to our current finance system.
+
+The main advantage of using agile is that the business gets a working usable product very early and we can do continuous improvements on that same product to reach the final goal for the product.
+
+SCRUM:-It is a popular agile framework that uses a 3-5-3 rule
+3-roles(Product Owner, Dev team, Scrum master)
+Product owner is the guy who decides what all tasks the business need to perform to achieve its goal the guy also manages the product backlog.
+
+Scrum Master:-Who basically oversees the team helps in removing the impediments and also ensures that the team is following the scrum principles.
+
+Dev team:-Cross functional team made up of developers, testers, engineers who actually develop the product.
+
+
+3-Artifacts(Product backlog, Sprint Backlog, Increment)
+Product Backlog :- it contains all the list of tasks and items that needs to be executed.
+
+Sprint backlog :- list of all the items and tasks that will be completed in the current sprint.
+
+Increment –
+The working product delivered at the end of the Sprint.
+
+
+5-Events
+Sprint Planning –
+It is basically the beginning event for the sprint where we discuss what are the high priority tasks in product backlog and which tasks will be to sprint backlog that is what are the tasks that will be completed in the current sprint.
+
+Daily Stand-Up (Daily Scrum) –
+A 15-minute meeting where each team member answers three questions:
+What did I do yesterday?
+What will I do today?
+Any blockers?
+
+Sprint Review –
+At the end of the Sprint, the team demonstrates the completed work to stakeholders where we get the feedback from stakeholder and also validate that all the tasks in our sprint backlog is finished or not.
+
+Sprint Retrospective –
+A event where we mostly discuss about the performance of the team.
+1.What went well in the sprint
+2.What could have been done better.
+3.What actions should we take to improve the performance in the next sprint.
+
+Sprint - 
+It is the container event that has all the 4 events listed in it.
+
+
+At the end of sprint we get 3 things:-
+1.Increment
+2.Retrospective report
+3.Stakeholders feedback.
