@@ -1,0 +1,26 @@
+// Get the grid from the operation
+def grid = operation.grid
+
+// Define data to insert (Account, Year, Period, Value)
+def dataValues = [
+    ['ACC1018', 'FY24', 'Jan_Groovy', 100],
+    ['ACC1018', 'FY25', 'Jan_Groovy', 200],
+    ['ACC1018', 'FY26', 'Jan_Groovy', 300],
+    ['ACC1017', 'FY24', 'Jan_Groovy', 150],
+    ['ACC1017', 'FY25', 'Jan_Groovy', 250],
+    ['ACC1017', 'FY26', 'Jan_Groovy', 350]
+]
+
+// Loop through and insert data
+dataValues.each { row, year, period, value ->
+    def cell = grid.getCellWithMembers(row, year, period)
+    if (cell) {
+        cell.data = value  // Update cell data
+    } else {
+        println "⚠️ No cell found for: $row, $year, $period"
+    }
+}
+
+// Save grid data
+operation.saveGrid()
+println "✅ Data successfully saved to PBCS!"
