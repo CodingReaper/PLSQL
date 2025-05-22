@@ -7,23 +7,23 @@ DB_FILE = 'db.json'
 # Model info with descriptions and suggestions
 models_info = {
     "gpt-4o-mini": {
-        "description": "Fast and efficient for lightweight tasks",
+        "description": "Fast and efficient for lightweight tasks.",
         "suggestions": ["Summarize a paragraph", "Tag email categories"]
     },
     "gpt-4o": {
-        "description": "Multimodal model for text, images, and audio",
+        "description": "Multimodal model for text, images, and audio.",
         "suggestions": ["Describe image contents", "Extract tables from PDF"]
     },
     "gpt-4-turbo": {
-        "description": "Faster GPT-4 with cost efficiency",
+        "description": "Faster GPT-4 with cost efficiency.",
         "suggestions": ["Write Python functions", "Explain complex logic"]
     },
     "gpt-4": {
-        "description": "Standard GPT-4 for high quality responses",
+        "description": "Standard GPT-4 for high quality responses.",
         "suggestions": ["Generate research summary", "Answer technical questions"]
     },
     "gpt-3.5-turbo": {
-        "description": "Affordable model for general tasks",
+        "description": "Affordable model for general tasks.",
         "suggestions": ["Translate a sentence", "Create a to-do list"]
     }
 }
@@ -44,11 +44,6 @@ def load_or_initialize_db():
         with open(DB_FILE, 'w') as file:
             json.dump(db, file)
     return db
-
-# Convert model data for dropdown
-model_keys = list(models_info.keys())
-model_labels = [f"{model}\n{models_info[model]['description']}" for model in model_keys]
-label_to_model = dict(zip(model_labels, model_keys))
 
 # Handle user prompt
 def process_user_input(user_input, db):
@@ -74,9 +69,13 @@ def main():
 
     db = load_or_initialize_db()
 
-    selected_label = st.sidebar.selectbox("Select OpenAI model", model_labels, index=0)
-    selected_model = label_to_model[selected_label]
+    # Model selector
+    models = list(models_info.keys())
+    selected_model = st.sidebar.selectbox("Select OpenAI model", models, index=0)
     st.session_state["openai_model"] = selected_model
+
+    # Dynamic model description in sidebar
+    st.sidebar.markdown(f"**🧠 Model Info:** {models_info[selected_model]['description']}")
 
     if "messages" not in st.session_state:
         st.session_state.messages = db.get('chat_history', [])
@@ -103,7 +102,7 @@ def main():
         st.rerun()
 
     # Clear chat option
-    if st.sidebar.button("Clear Chat"):
+    if st.sidebar.button("🧹 Clear Chat"):
         db['chat_history'] = []
         with open(DB_FILE, 'w') as file:
             json.dump(db, file)
