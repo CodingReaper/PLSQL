@@ -1,134 +1,139 @@
 import streamlit as st
 import json
 import os
+from datetime import datetime
 
+# File path for local JSON storage
 DB_FILE = 'db.json'
 
 # Model info with descriptions and suggestions
-models_info = {
-    "gpt-4o-mini": {
-        "description": "Fast and efficient for lightweight tasks.",
-        "suggestions": ["Summarize a paragraph", "Tag email categories"]
-    },
-    "gpt-4o": {
-        "description": "Multimodal model for text, images, and audio.",
-        "suggestions": ["Describe image contents", "Extract tables from PDF"]
-    },
-    "gpt-4-turbo": {
-        "description": "Faster GPT-4 with cost efficiency.",
-        "suggestions": ["Write Python functions", "Explain complex logic"]
+MODELS = {
+    "gpt-3.5-turbo": {
+        "desc": "Affordable and fast for general tasks",
+        "prompts": [
+            "Summarize this paragraph into bullet points",
+            "Write an email to schedule a meeting"
+        ]
     },
     "gpt-4": {
-        "description": "Standard GPT-4 for high quality responses.",
-        "suggestions": ["Generate research summary", "Answer technical questions"]
+        "desc": "More accurate and better at reasoning",
+        "prompts": [
+            "Write a Python function to clean data",
+            "Generate a blog post outline for AI trends"
+        ]
     },
-    "gpt-3.5-turbo": {
-        "description": "Affordable model for general tasks.",
-        "suggestions": ["Translate a sentence", "Create a to-do list"]
+    "gpt-4-turbo": {
+        "desc": "Cheaper and faster version of GPT-4",
+        "prompts": [
+            "Explain quantum computing in simple terms",
+            "Draft a business proposal introduction"
+        ]
+    },
+    "gpt-4o": {
+        "desc": "Multimodal model with vision and audio support",
+        "prompts": [
+            "Describe the content of an image",
+            "Translate and summarize a voice note"
+        ]
+    },
+    "gpt-4o-mini": {
+        "desc": "Lightweight model for quick tasks",
+        "prompts": [
+            "Write a tweet about AI ethics",
+            "List 5 benefits of regular exercise"
+        ]
     }
 }
 
-# Load DB safely
-def load_or_initialize_db():
-    if not os.path.exists(DB_FILE):
+# Utility to load or initialize db.json
+def load_db():
+    if not os.path.exists(DB_FILE) or os.path.getsize(DB_FILE) == 0:
         with open(DB_FILE, 'w') as file:
-            json.dump({'openai_api_keys': [], 'chat_history': []}, file)
-    try:
-        with open(DB_FILE, 'r') as file:
-            content = file.read().strip()
-            if not content:
-                raise ValueError("Empty DB file")
-            db = json.loads(content)
-    except (json.JSONDecodeError, ValueError):
-        db = {'openai_api_keys': [], 'chat_history': []}
-        with open(DB_FILE, 'w') as file:
-            json.dump(db, file)
-    return db
+            json.dump({"openai_api_keys": [], "chat_history": []}, file)
+    with open(DB_FILE, 'r') as file:
+        try:
+            return json.load(file)
+        except json.JSONDecodeError:
+            return {"openai_api_keys": [], "chat_history": []}
 
-# Handle user prompt
-def process_user_input(user_input, db):
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    # Simulate assistant response
-    response = f"Hi, you said: {user_input}"
-    with st.chat_message("assistant"):
-        st.markdown(response)
-
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    db['chat_history'] = st.session_state.messages
+def save_db(data):
     with open(DB_FILE, 'w') as file:
-        json.dump(db, file)
+        json.dump(data, file)
 
-    st.session_state.show_suggestions = False
-
-# Main chat UI
+# Main chatbot app
 def main():
     st.title("🤖 Chatbot")
+    db = load_db()
 
-    db = load_or_initialize_db()
+    # Sidebar API key & model
+    st.sidebar.header("🔧 Settings")
+    models = list(MODELS.keys())
+    selected_model = st.sidebar.selectbox("Select OpenAI Model", models)
+    st.sidebar.info(f"**Model Info:** {MODELS[selected_model]['desc']}")
 
-    # Model selector
-    models = list(models_info.keys())
-    selected_model = st.sidebar.selectbox("Select OpenAI model", models, index=0)
-    st.session_state["openai_model"] = selected_model
-
-    # Dynamic model description in sidebar
-    st.sidebar.markdown(f"**🧠 Model Info:** {models_info[selected_model]['description']}")
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = db.get('chat_history', [])
-    if "show_suggestions" not in st.session_state:
-        st.session_state.show_suggestions = True
-
-    # Show suggestions before chat
-    if st.session_state.show_suggestions:
-        st.subheader(f"💡 Suggested Prompts for {selected_model}")
-        cols = st.columns(2)
-        for i, suggestion in enumerate(models_info[selected_model]["suggestions"]):
-            if cols[i % 2].button(suggestion):
-                process_user_input(suggestion, db)
-                st.rerun()
-
-    # Show chat history
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # Manual input
-    if prompt := st.chat_input("What is up?"):
-        process_user_input(prompt, db)
-        st.rerun()
-
-    # Clear chat option
-    if st.sidebar.button("🧹 Clear Chat"):
+    if st.sidebar.button("Clear Chat"):
         db['chat_history'] = []
-        with open(DB_FILE, 'w') as file:
-            json.dump(db, file)
-        st.session_state.messages = []
-        st.session_state.show_suggestions = True
+        save_db(db)
+        st.session_state['messages'] = []
         st.rerun()
 
-# Entry point
-if __name__ == '__main__':
-    if 'openai_api_key' in st.session_state and st.session_state['openai_api_key']:
-        main()
-    else:
-        db = load_or_initialize_db()
-        selected_key = st.selectbox("Existing OpenAI API Keys", db['openai_api_keys'])
-        new_key = st.text_input("New OpenAI API Key", type="password")
-        login = st.button("Login")
+    # API key selection
+    if 'openai_api_key' not in st.session_state:
+        with st.sidebar.expander("🔐 API Key Login"):
+            selected_key = st.selectbox("Use Existing Key", db['openai_api_keys']) if db['openai_api_keys'] else None
+            new_key = st.text_input("Or Enter New Key", type="password")
+            if st.button("Login"):
+                if new_key:
+                    db['openai_api_keys'].append(new_key)
+                    save_db(db)
+                    st.success("API Key saved successfully.")
+                    st.session_state['openai_api_key'] = new_key
+                    st.rerun()
+                elif selected_key:
+                    st.session_state['openai_api_key'] = selected_key
+                    st.success(f"Logged in with selected key.")
+                    st.rerun()
+        return
 
-        if login:
-            if new_key:
-                db['openai_api_keys'].append(new_key)
-                with open(DB_FILE, 'w') as file:
-                    json.dump(db, file)
-                st.success("Key saved successfully.")
-                st.session_state['openai_api_key'] = new_key
+    # Load messages
+    if 'messages' not in st.session_state:
+        st.session_state['messages'] = db.get('chat_history', [])
+
+    # Suggested prompts
+    if 'used_suggestion' not in st.session_state:
+        st.session_state['used_suggestion'] = False
+
+    if not st.session_state['used_suggestion']:
+        st.markdown(f"### 💡 Suggested Prompts for {selected_model}")
+        col1, col2 = st.columns(2)
+        suggestions = MODELS[selected_model]['prompts']
+        for i, suggestion in enumerate(suggestions):
+            if (col1 if i % 2 == 0 else col2).button(suggestion):
+                st.session_state['used_suggestion'] = True
+                st.session_state['input_prompt'] = suggestion
                 st.rerun()
-            elif selected_key:
-                st.success(f"Logged in with key: {selected_key}")
-                st.session_state['openai_api_key'] = selected_key
-                st.rerun()
+
+    # Display chat messages
+    for message in st.session_state['messages']:
+        with st.chat_message(message['role']):
+            st.markdown(message['content'])
+
+    # Chat input
+    prompt = st.chat_input("Ask me anything...") or st.session_state.pop('input_prompt', None)
+    if prompt:
+        st.session_state['messages'].append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # Fake assistant response for demo
+        response = f"You said: '{prompt}' — this is a simulated response."
+        st.session_state['messages'].append({"role": "assistant", "content": response})
+        with st.chat_message("assistant"):
+            st.markdown(response)
+
+        # Save
+        db['chat_history'] = st.session_state['messages']
+        save_db(db)
+
+if __name__ == '__main__':
+    main()
