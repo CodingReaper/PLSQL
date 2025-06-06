@@ -6,10 +6,8 @@ from datetime import datetime
 # Set Streamlit to wide mode
 st.set_page_config(layout="wide")
 
-# File path for local JSON storage
 DB_FILE = 'db.json'
 
-# Model info with descriptions and suggestions
 MODELS = {
     "gpt-3.5-turbo": {
         "desc": "Affordable and fast for general tasks",
@@ -48,7 +46,6 @@ MODELS = {
     }
 }
 
-# Utility to load or initialize db.json
 def load_db():
     if not os.path.exists(DB_FILE) or os.path.getsize(DB_FILE) == 0:
         with open(DB_FILE, 'w') as file:
@@ -63,18 +60,21 @@ def save_db(data):
     with open(DB_FILE, 'w') as file:
         json.dump(data, file)
 
-# Main chatbot app
+def count_tokens(messages):
+    return sum(len(msg['content'].split()) for msg in messages)
+
 def main():
     st.title("🤖 Chatbot")
     db = load_db()
 
-    # Sidebar Settings
+    if 'prompt_history' not in st.session_state:
+        st.session_state['prompt_history'] = []
+
     with st.sidebar:
         st.header("🔧 Settings")
         models = list(MODELS.keys())
         selected_model = st.selectbox("Select OpenAI Model", models)
         st.info(f"**Model Info:** {MODELS[selected_model]['desc']}")
-        st.text(f"🕒 Session: {int(st.session_state.get('session_time', 0))}s")
 
         if st.button("Clear Chat"):
             db['chat_history'] = []
@@ -92,8 +92,14 @@ def main():
                 mime="application/json"
             )
 
+        if st.session_state.get('prompt_history'):
+            st.subheader("🕘 Recent Prompts")
+            for i, prompt in enumerate(reversed(st.session_state['prompt_history'][-5:])):
+                st.caption(f"{i+1}. {prompt}")
 
-    # API key handling
+        if st.session_state.get('messages'):
+            st.markdown(f"**Messages:** {len(st.session_state['messages'])} | Tokens: {count_tokens(st.session_state['messages'])}")
+
     if 'openai_api_key' not in st.session_state:
         with st.sidebar.expander("🔐 API Key Login"):
             selected_key = st.selectbox("Use Existing Key", db['openai_api_keys']) if db['openai_api_keys'] else None
@@ -111,16 +117,13 @@ def main():
                     st.rerun()
         return
 
-    # Timer
     if 'session_start' not in st.session_state:
         st.session_state['session_start'] = datetime.now()
     st.session_state['session_time'] = (datetime.now() - st.session_state['session_start']).seconds
 
-    # Load messages
     if 'messages' not in st.session_state:
         st.session_state['messages'] = db.get('chat_history', [])
 
-    # Suggested prompts
     if 'used_suggestion' not in st.session_state:
         st.session_state['used_suggestion'] = False
 
@@ -132,27 +135,38 @@ def main():
             if (col1 if i % 2 == 0 else col2).button(suggestion):
                 st.session_state['used_suggestion'] = True
                 st.session_state['input_prompt'] = suggestion
+                st.session_state['prompt_history'].append(suggestion)
                 st.rerun()
 
-    # Display chat messages
     for message in st.session_state['messages']:
         with st.chat_message(message['role']):
             st.markdown(message['content'])
 
-    # Chat input
     prompt = st.chat_input("Ask me anything...") or st.session_state.pop('input_prompt', None)
     if prompt:
+        if prompt.startswith("/"):
+            command = prompt.strip().lower()
+            if command == "/clear" or command == "/reset":
+                st.session_state['messages'] = []
+                db['chat_history'] = []
+                save_db(db)
+                st.rerun()
+            elif command == "/export":
+                st.warning("Please use the Export button in the sidebar to download chat.")
+            else:
+                st.warning(f"Unknown command: {command}")
+            return
+
         st.session_state['messages'].append({"role": "user", "content": prompt})
+        st.session_state['prompt_history'].append(prompt)
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Simulated assistant response
         response = f"You said: '{prompt}' — this is a simulated response."
         st.session_state['messages'].append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
             st.markdown(response)
 
-        # Save
         db['chat_history'] = st.session_state['messages']
         save_db(db)
 
