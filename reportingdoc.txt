@@ -7,3 +7,5 @@ eliminating manual cleanup effort.
 	•	Created a Python utility to perform single or multi-term searches across multiple Excel sheets, 
 returning file names and row locations, and exporting results to CSV. 
 This streamlined the process of identifying accounts and mappings during CPL report creation.
+
+Hi everyone, here are the key tasks I worked on in the past month.
