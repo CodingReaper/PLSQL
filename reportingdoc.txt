@@ -1,0 +1,9 @@
+EPM Work Highlights
+	•	Enhanced PCM ML shell script by adding functionality to archive existing dimension files, 
+download the latest dimension files to the jumpbox, and move them to the PCM export directory for verification.
+	•	Developed a Groovy script to automatically delete Level 0 dynamic calc members of the RC dimension during reorganizations, 
+eliminating manual cleanup effort.
+	•	Built two CPL reports for the PCM ML application to support business reporting requirements.
+	•	Created a Python utility to perform single or multi-term searches across multiple Excel sheets, 
+returning file names and row locations, and exporting results to CSV. 
+This streamlined the process of identifying accounts and mappings during CPL report creation.
