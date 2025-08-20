@@ -1,0 +1,388 @@
+// tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      }
+    },
+  },
+  plugins: [],
+}
+
+
+
+// src/components/BankDashboard.js
+import React, { useState } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import {
+  MessageCircle,
+  Send,
+  FileText,
+  TrendingUp,
+  DollarSign,
+  Users,
+  AlertTriangle,
+} from "lucide-react";
+import stateStreetLogo from "../assets/logo.png";
+const BankDashboard = () => {
+  const [selectedModules, setSelectedModules] = useState([]);
+  const [selectedDocTypes, setSelectedDocTypes] = useState([]);
+  const [dashboardLoaded, setDashboardLoaded] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [currentMessage, setCurrentMessage] = useState("");
+
+  const modules = ["Procurements", "Requisitions", "PO", "AP", "GL"];
+  const docTypes = ["SOW", "Contracts", "MSA"];
+
+  // Sample data for charts
+  const barData = [
+    { name: "Jan", value: 4000, amount: 2400 },
+    { name: "Feb", value: 3000, amount: 1398 },
+    { name: "Mar", value: 2000, amount: 9800 },
+    { name: "Apr", value: 2780, amount: 3908 },
+    { name: "May", value: 1890, amount: 4800 },
+    { name: "Jun", value: 2390, amount: 3800 },
+  ];
+
+  const pieData = [
+    { name: "Approved", value: 400, color: "#10B981" },
+    { name: "Pending", value: 300, color: "#F59E0B" },
+    { name: "Rejected", value: 200, color: "#EF4444" },
+    { name: "In Review", value: 100, color: "#6366F1" },
+  ];
+
+  const handleModuleChange = (module) => {
+    setSelectedModules((prev) =>
+      prev.includes(module)
+        ? prev.filter((m) => m !== module)
+        : [...prev, module]
+    );
+  };
+
+  const handleDocTypeChange = (docType) => {
+    setSelectedDocTypes((prev) =>
+      prev.includes(docType)
+        ? prev.filter((d) => d !== docType)
+        : [...prev, docType]
+    );
+  };
+
+  const handleSubmit = () => {
+    if (selectedModules.length > 0 && selectedDocTypes.length > 0) {
+      setDashboardLoaded(true);
+      setChatMessages([
+        {
+          type: "bot",
+          message: `Dashboard loaded for ${selectedModules.join(
+            ", "
+          )} modules with ${selectedDocTypes.join(
+            ", "
+          )} document types. How can I help you analyze this data?`,
+        },
+      ]);
+    }
+  };
+
+  const sendChatMessage = () => {
+    if (currentMessage.trim()) {
+      setChatMessages((prev) => [
+        ...prev,
+        { type: "user", message: currentMessage },
+        {
+          type: "bot",
+          message:
+            "I can help you analyze the financial data and generate insights based on your selected modules and document types. What specific metrics would you like to explore?",
+        },
+      ]);
+      setCurrentMessage("");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-2">
+      <div className="w-full mx-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-700 to-blue-600 p-4 mb-4 w-full shadow-md flex items-center gap-5">
+          <img
+            src={stateStreetLogo}
+            alt="State Street Logo"
+            className="h-14 w-auto object-contain"
+          />
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-wide">
+            Procurement Dashboard
+          </h1>
+        </div>
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-12 gap-4 h-[calc(100vh-140px)] overflow-hidden">
+          {/* Left Column */}
+          <div className="col-span-3 space-y-4 h-full flex flex-col">
+            {/* Modules */}
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 flex-1 flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+                <Users className="text-blue-600 w-5 h-5" />
+                <h2 className="text-xl font-semibold text-slate-800">
+                  Modules
+                </h2>
+              </div>
+              <div className="space-y-3 overflow-y-auto">
+                {modules.map((module) => (
+                  <label
+                    key={module}
+                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedModules.includes(module)}
+                      onChange={() => handleModuleChange(module)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <span className="text-slate-700 font-medium">{module}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Doc Type */}
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 flex-1 flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+                <FileText className="text-green-600 w-5 h-5" />
+                <h2 className="text-xl font-semibold text-slate-800">
+                  Doc Type
+                </h2>
+              </div>
+              <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
+                {docTypes.map((docType) => (
+                  <label
+                    key={docType}
+                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedDocTypes.includes(docType)}
+                      onChange={() => handleDocTypeChange(docType)}
+                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500 focus:ring-2"
+                    />
+                    <span className="text-slate-700 font-medium">
+                      {docType}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                disabled={
+                  selectedModules.length === 0 || selectedDocTypes.length === 0
+                }
+                className="w-full mt-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 disabled:from-slate-400 disabled:to-slate-500 transition-all"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+
+          {/* Middle Column */}
+          <div className="col-span-6 flex flex-col gap-4 h-full min-h-0">
+            {/* Dashboard */}
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 flex-[1.5] flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+                <TrendingUp className="text-purple-600 w-5 h-5" />
+                <h2 className="text-xl font-semibold text-slate-800">
+                  Dashboard
+                </h2>
+              </div>
+              <div className="flex-1 min-h-0 overflow-hidden">
+                {dashboardLoaded ? (
+                  <div className="grid grid-cols-2 gap-4 h-full">
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <h3 className="text-sm font-medium text-slate-600 mb-2">
+                        Monthly Transactions
+                      </h3>
+                      <ResponsiveContainer width="100%" height="85%">
+                        <BarChart data={barData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="#3B82F6" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <h3 className="text-sm font-medium text-slate-600 mb-2">
+                        Document Status
+                      </h3>
+                      <ResponsiveContainer width="100%" height="85%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={40}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={index} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-slate-50 rounded-lg">
+                    <div className="text-center">
+                      <AlertTriangle className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                      <p className="text-slate-600">
+                        Select modules and document types, then click Submit
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Reports */}
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 flex-1 flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+                <FileText className="text-orange-600 w-5 h-5" />
+                <h2 className="text-xl font-semibold text-slate-800">
+                  Reports
+                </h2>
+              </div>
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {dashboardLoaded ? (
+                  <div className="space-y-2">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <h3 className="font-semibold text-slate-800 text-sm">
+                        Financial Summary Report
+                      </h3>
+                      <p className="text-xs text-slate-600">
+                        Overview of selected modules
+                      </p>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <h3 className="font-semibold text-slate-800 text-sm">
+                        Document Processing Analysis
+                      </h3>
+                      <p className="text-xs text-slate-600">
+                        Processing times & efficiency
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                      <h3 className="font-semibold text-slate-800 text-sm">
+                        Compliance Status Report
+                      </h3>
+                      <p className="text-xs text-slate-600">
+                        Regulatory compliance checks
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-slate-50 rounded-lg">
+                    <div className="text-center">
+                      <FileText className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                      <p className="text-slate-600">
+                        Reports will appear after loading dashboard
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - AI Assistant */}
+          <div className="col-span-3 h-full flex flex-col min-h-0">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 flex flex-col h-full min-h-0">
+              <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+                <MessageCircle className="text-indigo-600 w-5 h-5" />
+                <h2 className="text-xl font-semibold text-slate-800">
+                  AI Assistant
+                </h2>
+              </div>
+
+              {dashboardLoaded ? (
+                <>
+                  <div className="flex-1 overflow-y-auto space-y-3 p-3 bg-slate-50 rounded-lg min-h-0">
+                    {chatMessages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg ${
+                          msg.type === "user"
+                            ? "bg-blue-600 text-white ml-4"
+                            : "bg-white text-slate-700 mr-4 shadow-sm border"
+                        }`}
+                      >
+                        <p className="text-sm">{msg.message}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Input */}
+                  <div className="flex gap-2 flex-shrink-0 mt-3">
+                    <input
+                      type="text"
+                      value={currentMessage}
+                      onChange={(e) => setCurrentMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && sendChatMessage()}
+                      placeholder="Ask about your data..."
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <button
+                      onClick={sendChatMessage}
+                      className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center flex-1">
+                  <div className="text-center">
+                    <MessageCircle className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                    <p className="text-slate-600">
+                      AI Assistant will be available after loading dashboard
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BankDashboard;
