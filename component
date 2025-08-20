@@ -386,3 +386,45 @@ const BankDashboard = () => {
 };
 
 export default BankDashboard;
+
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional: Add custom fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Custom scrollbar styles for professional look */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+// src/App.jsx
+import React from 'react'
+import BankDashboard from './components/BankDashboard'
+
+
+function App() {
+  return (
+    <div className="App">
+      <BankDashboard />
+    </div>
+  )
+}
+
+export default App
+
