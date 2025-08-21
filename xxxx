@@ -179,3 +179,394 @@ I’m looking forward to contributing to the team and continuing to build my exp
 Outside of work, I enjoy [insert your hobby – e.g., traveling, photography, or exploring new tech].
 Happy to connect and collaborate with you all.
 
+import React, { useState } from "react";
+import {
+  Search,
+  MessageSquare,
+  BarChart3,
+  FileText,
+  Send,
+} from "lucide-react";
+
+const StateStreetOpsConsole = () => {
+  const [selectedGPT, setSelectedGPT] = useState("Raw Infobot");
+  const [selectedView, setSelectedView] = useState("Insights");
+  const [chatStarted, setChatStarted] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState("");
+  const [selectedModules, setSelectedModules] = useState([]);
+  const [selectedDoctypes, setSelectedDoctypes] = useState([]);
+
+  const insights = [
+    {
+      title: "Total Fails Today",
+      value: "35,453",
+      subtitle: "↓ 2.1% from yesterday",
+      color: "text-red-600",
+    },
+    {
+      title: "Fail Rate Today",
+      value: "204",
+      subtitle: "↓ 2.1 Million",
+      color: "text-orange-600",
+    },
+    {
+      title: "Fail Rate 7 Days",
+      value: "30",
+      subtitle: "↑ 12%",
+      color: "text-green-600",
+    },
+    {
+      title: "Buy-In Intents Today",
+      value: "3",
+      subtitle: "$3.8 Million",
+      color: "text-blue-600",
+    },
+    {
+      title: "DTC Due to Settle Today/Not affirmed",
+      value: "244",
+      subtitle: "with Broadridge Capital Markets",
+      color: "text-gray-600",
+    },
+    {
+      title: "Failing to Deliver/Insufficient Position",
+      value: "30",
+      subtitle: "Positions $3 through Deep Transfers",
+      color: "text-red-600",
+    },
+    {
+      title: "Swift Authorization Pending Approval",
+      value: "478",
+      subtitle: "",
+      color: "text-orange-600",
+    },
+    {
+      title: "Non- STP",
+      value: "200",
+      subtitle: "Require client action/approval client service",
+      color: "text-blue-600",
+    },
+    {
+      title: "DTC Position Breaks",
+      value: "459",
+      subtitle: "IBM has an inbound Corporate Action",
+      color: "text-purple-600",
+    },
+  ];
+
+  const modules = [
+    "Operations Console",
+    "Dashboard",
+    "Positions",
+    "Transactions",
+    "Opportunities",
+    "Risk Management",
+    "Trade Settlement",
+    "Corporate Actions",
+    "Client Services",
+  ];
+
+  const doctypes = [
+    "Trade Confirmations",
+    "Settlement Instructions",
+    "Corporate Action Notices",
+    "Position Reports",
+    "Regulatory Filings",
+    "Client Communications",
+    "Risk Reports",
+  ];
+
+  const handleSendMessage = () => {
+    if (inputValue.trim()) {
+      setChatStarted(true);
+      setMessages([...messages, { type: "user", content: inputValue }]);
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            type: "bot",
+            content: `Based on your query about "${inputValue}", here are the relevant insights from our ${selectedGPT} analysis...`,
+          },
+        ]);
+      }, 1000);
+      setInputValue("");
+    }
+  };
+
+  const handleModuleChange = (module) => {
+    setSelectedModules((prev) =>
+      prev.includes(module)
+        ? prev.filter((m) => m !== module)
+        : [...prev, module]
+    );
+  };
+
+  const handleDoctypeChange = (doctype) => {
+    setSelectedDoctypes((prev) =>
+      prev.includes(doctype)
+        ? prev.filter((d) => d !== doctype)
+        : [...prev, doctype]
+    );
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm shrink-0">
+        <div className="bg-blue-900 px-4 lg:px-6 py-3 flex items-center justify-between">
+          <div className="text-white text-xl font-bold">StateStreet</div>
+          <div className="flex items-center space-x-2 lg:space-x-4">
+            <div className="relative hidden sm:block">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="pl-10 pr-4 py-2 rounded bg-white text-sm w-48 lg:w-64"
+              />
+            </div>
+            <button className="bg-blue-700 px-3 lg:px-4 py-2 rounded text-white text-sm">
+              Search
+            </button>
+            <div className="text-white text-sm lg:text-base">John Smith</div>
+          </div>
+        </div>
+
+        <div className="px-4 lg:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
+          <div className="flex items-center space-x-2">
+            <MessageSquare className="w-6 h-6 text-blue-600" />
+            <span className="text-xl font-semibold text-gray-800">
+              Ops Console
+            </span>
+          </div>
+          <nav className="flex space-x-4 lg:space-x-6">
+            <a
+              href="#"
+              className="flex items-center space-x-1 text-blue-600 hover:text-blue-800"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="text-sm lg:text-base">Dashboard</span>
+            </a>
+            <a
+              href="#"
+              className="flex items-center space-x-1 text-blue-600 hover:text-blue-800"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="text-sm lg:text-base">Reports</span>
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      {/* Main Layout */}
+      <div className="flex flex-1 overflow-hidden gap-2 lg:gap-4 px-2 lg:px-6 pb-2 lg:pb-4 pt-2">
+        {/* Left - Chat */}
+        <div className="flex-1 flex flex-col bg-white rounded-lg shadow min-w-0">
+          {/* GPT Buttons Centered */}
+          <div className="p-3 lg:p-4 border-b flex justify-center shrink-0">
+            <div className="flex">
+              <button
+                onClick={() => setSelectedGPT("Raw Infobot")}
+                className={`px-4 lg:px-6 py-2 rounded-l-lg font-medium text-sm lg:text-base ${
+                  selectedGPT === "Raw Infobot"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-300 text-gray-700"
+                }`}
+              >
+                Raw Infobot
+              </button>
+              <button
+                onClick={() => setSelectedGPT("EE")}
+                className={`px-4 lg:px-6 py-2 rounded-r-lg font-medium text-sm lg:text-base ${
+                  selectedGPT === "EE"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-300 text-gray-700"
+                }`}
+              >
+                EE
+              </button>
+            </div>
+          </div>
+
+          {/* View Toggle */}
+          {!chatStarted && (
+            <div className="p-2 flex justify-center space-x-2 lg:space-x-4 shrink-0">
+              <button
+                onClick={() => setSelectedView("Insights")}
+                className={`px-3 lg:px-4 py-2 rounded-lg font-medium text-sm lg:text-base ${
+                  selectedView === "Insights"
+                    ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Insights
+              </button>
+              <button
+                onClick={() => setSelectedView("Recommended Questions")}
+                className={`px-3 lg:px-4 py-2 rounded-lg font-medium text-sm lg:text-base ${
+                  selectedView === "Recommended Questions"
+                    ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Recommended Questions
+              </button>
+            </div>
+          )}
+
+          {/* Chat Content Scrollable */}
+          <div className="flex-1 p-3 lg:p-4 overflow-y-auto min-h-0">
+            {!chatStarted ? (
+              <>
+                {selectedView === "Insights" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
+                    {insights.map((insight, index) => (
+                      <div
+                        key={index}
+                        className="bg-gray-50 p-3 lg:p-4 rounded-lg border min-h-24 lg:min-h-28 flex flex-col justify-between"
+                      >
+                        <h3 className="font-medium text-gray-700 text-xs lg:text-sm leading-tight">
+                          {insight.title}
+                        </h3>
+                        <div
+                          className={`text-xl lg:text-2xl font-bold ${insight.color} my-1`}
+                        >
+                          {insight.value}
+                        </div>
+                        {insight.subtitle && (
+                          <p className="text-xs text-gray-500">
+                            {insight.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
+                    {[
+                      "What are my total fails and classify them by age?",
+                      "What is exposure to firm TEST COMPANY failing to settle open transactions including repos?",
+                      "What are my Open Exceptions for Equity Trades today?",
+                      "What are my total fails for this security IBM?",
+                      "What are my depot realignment opportunities for IBM?",
+                      "How many unmatched Transactions we have today?",
+                      "What's the projected positions for security US4592001014 across depots as of 06/29/2023?",
+                      "What will be my position at DTC #229 if the trades XYZ3 is not settled today?",
+                      "What is my Total Margin Call Value and explain margin call and drivers",
+                    ].map((q, i) => (
+                      <div
+                        key={i}
+                        className="bg-gray-50 p-3 lg:p-4 rounded-lg border min-h-24 lg:min-h-28 flex items-center justify-center text-center text-xs lg:text-sm hover:bg-gray-100 cursor-pointer transition-colors"
+                        onClick={() => setInputValue(q)}
+                      >
+                        {q}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-4">
+                {messages.map((m, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${
+                      m.type === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-2 rounded-lg text-sm lg:text-base ${
+                        m.type === "user"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-200 text-gray-800"
+                      }`}
+                    >
+                      {m.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Chat Input */}
+          <div className="p-3 lg:p-4 border-t shrink-0">
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                placeholder="Ask a question..."
+                className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
+              />
+              <button
+                onClick={handleSendMessage}
+                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Send className="w-4 lg:w-5 h-4 lg:h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right - Filters (Fixed, No Scroll) */}
+        <div className="w-72 lg:w-96 flex flex-col bg-white rounded-lg shadow p-3 lg:p-4 shrink-0">
+          {/* Scroll removed from here */}
+          <div className="space-y-4 flex-1">
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-2 text-sm lg:text-base">
+                Modules
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                {modules.map((m) => (
+                  <label
+                    key={m}
+                    className="flex items-center space-x-2 text-xs lg:text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedModules.includes(m)}
+                      onChange={() => handleModuleChange(m)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="leading-tight">{m}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-2 text-sm lg:text-base">
+                Document Type
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                {doctypes.map((d) => (
+                  <label
+                    key={d}
+                    className="flex items-center space-x-2 text-xs lg:text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedDoctypes.includes(d)}
+                      onChange={() => handleDoctypeChange(d)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="leading-tight">{d}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Button pinned at bottom */}
+          <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-medium mt-4 text-sm lg:text-base">
+            Generate Reports & Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StateStreetOpsConsole;
+
