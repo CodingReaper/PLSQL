@@ -1,294 +1,133 @@
-import streamlit as st
-import json
-import os
-from datetime import datetime
-
-# Set Streamlit to wide mode
-st.set_page_config(layout="wide")
-
-DB_FILE = 'db.json'
-
-MODELS = {
-    "gpt-3.5-turbo": {
-        "desc": "Affordable and fast for general tasks",
-        "prompts": [
-            "Summarize this paragraph into bullet points",
-            "Write an email to schedule a meeting"
-        ]
-    },
-    "gpt-4": {
-        "desc": "More accurate and better at reasoning",
-        "prompts": [
-            "Write a Python function to clean data",
-            "Generate a blog post outline for AI trends"
-        ]
-    },
-    "gpt-4-turbo": {
-        "desc": "Cheaper and faster version of GPT-4",
-        "prompts": [
-            "Explain quantum computing in simple terms",
-            "Draft a business proposal introduction"
-        ]
-    },
-    "gpt-4o": {
-        "desc": "Multimodal model with vision and audio support",
-        "prompts": [
-            "Describe the content of an image",
-            "Translate and summarize a voice note"
-        ]
-    },
-    "gpt-4o-mini": {
-        "desc": "Lightweight model for quick tasks",
-        "prompts": [
-            "Write a tweet about AI ethics",
-            "List 5 benefits of regular exercise"
-        ]
-    }
-}
-
-def load_db():
-    if not os.path.exists(DB_FILE) or os.path.getsize(DB_FILE) == 0:
-        with open(DB_FILE, 'w') as file:
-            json.dump({"openai_api_keys": [], "chat_history": []}, file)
-    with open(DB_FILE, 'r') as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError:
-            return {"openai_api_keys": [], "chat_history": []}
-
-def save_db(data):
-    with open(DB_FILE, 'w') as file:
-        json.dump(data, file)
-
-def count_tokens(messages):
-    return sum(len(msg['content'].split()) for msg in messages)
-
-def main():
-    st.title("🤖 Chatbot")
-    db = load_db()
-
-    if 'prompt_history' not in st.session_state:
-        st.session_state['prompt_history'] = []
-
-    with st.sidebar:
-        st.header("🔧 Settings")
-        models = list(MODELS.keys())
-        selected_model = st.selectbox("Select OpenAI Model", models)
-        st.info(f"**Model Info:** {MODELS[selected_model]['desc']}")
-
-        if st.button("Clear Chat"):
-            db['chat_history'] = []
-            save_db(db)
-            st.session_state['messages'] = []
-            st.session_state['session_time'] = 0
-            st.rerun()
-
-        if st.session_state.get('messages') or st.session_state.get('input_prompt'):
-            chat_data = json.dumps(st.session_state.get('messages', []), indent=2)
-            st.download_button(
-                label="Export Chat",
-                data=chat_data,
-                file_name=f"chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json"
-            )
-
-        if st.session_state.get('prompt_history'):
-            st.subheader("🕘 Recent Prompts")
-            for i, prompt in enumerate(reversed(st.session_state['prompt_history'][-5:])):
-                st.caption(f"{i+1}. {prompt}")
-
-        if st.session_state.get('messages'):
-            st.markdown(f"**Messages:** {len(st.session_state['messages'])} | Tokens: {count_tokens(st.session_state['messages'])}")
-
-    if 'openai_api_key' not in st.session_state:
-        with st.sidebar.expander("🔐 API Key Login"):
-            selected_key = st.selectbox("Use Existing Key", db['openai_api_keys']) if db['openai_api_keys'] else None
-            new_key = st.text_input("Or Enter New Key", type="password")
-            if st.button("Login"):
-                if new_key:
-                    db['openai_api_keys'].append(new_key)
-                    save_db(db)
-                    st.success("API Key saved successfully.")
-                    st.session_state['openai_api_key'] = new_key
-                    st.rerun()
-                elif selected_key:
-                    st.session_state['openai_api_key'] = selected_key
-                    st.success("Logged in with selected key.")
-                    st.rerun()
-        return
-
-    if 'session_start' not in st.session_state:
-        st.session_state['session_start'] = datetime.now()
-    st.session_state['session_time'] = (datetime.now() - st.session_state['session_start']).seconds
-
-    if 'messages' not in st.session_state:
-        st.session_state['messages'] = db.get('chat_history', [])
-
-    if 'used_suggestion' not in st.session_state:
-        st.session_state['used_suggestion'] = False
-
-    if not st.session_state['used_suggestion']:
-        st.markdown(f"### 💡 Suggested Prompts for {selected_model}")
-        col1, col2 = st.columns(2)
-        suggestions = MODELS[selected_model]['prompts']
-        for i, suggestion in enumerate(suggestions):
-            if (col1 if i % 2 == 0 else col2).button(suggestion):
-                st.session_state['used_suggestion'] = True
-                st.session_state['input_prompt'] = suggestion
-                st.session_state['prompt_history'].append(suggestion)
-                st.rerun()
-
-    for message in st.session_state['messages']:
-        with st.chat_message(message['role']):
-            st.markdown(message['content'])
-
-    prompt = st.chat_input("Ask me anything...") or st.session_state.pop('input_prompt', None)
-    if prompt:
-        if prompt.startswith("/"):
-            command = prompt.strip().lower()
-            if command == "/clear" or command == "/reset":
-                st.session_state['messages'] = []
-                db['chat_history'] = []
-                save_db(db)
-                st.rerun()
-            elif command == "/export":
-                st.warning("Please use the Export button in the sidebar to download chat.")
-            else:
-                st.warning(f"Unknown command: {command}")
-            return
-
-        st.session_state['messages'].append({"role": "user", "content": prompt})
-        st.session_state['prompt_history'].append(prompt)
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        response = f"You said: '{prompt}' — this is a simulated response."
-        st.session_state['messages'].append({"role": "assistant", "content": response})
-        with st.chat_message("assistant"):
-            st.markdown(response)
-
-        db['chat_history'] = st.session_state['messages']
-        save_db(db)
-
-if __name__ == '__main__':
-    main()
-
-Hi everyone, I’m Ashutosh Sahoo. I’ve recently transitioned from an intern to a full-time role in the EPM team.
-During my internship, I worked across different EPM applications, focusing on Groovy scripting and core EPM functionalities.
-I’m looking forward to contributing to the team and continuing to build my expertise in this space.
-Outside of work, I enjoy [insert your hobby – e.g., traveling, photography, or exploring new tech].
-Happy to connect and collaborate with you all.
-
 import React, { useState } from "react";
 import {
   Search,
   MessageSquare,
-  BarChart3,
   FileText,
+  BarChart3,
   Send,
+  Mic,
 } from "lucide-react";
+import stateStreetLogo from "../assets/logo.png";
 
 const StateStreetOpsConsole = () => {
-  const [selectedGPT, setSelectedGPT] = useState("Raw Infobot");
+  const [selectedBot, setSelectedBot] = useState("Raw Infobot");
   const [selectedView, setSelectedView] = useState("Insights");
   const [chatStarted, setChatStarted] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [selectedModules, setSelectedModules] = useState([]);
-  const [selectedDoctypes, setSelectedDoctypes] = useState([]);
+  const [selectedDocTypes, setSelectedDocTypes] = useState([]);
 
   const insights = [
     {
       title: "Total Fails Today",
       value: "35,453",
-      subtitle: "↓ 2.1% from yesterday",
+      subtitle: "10.2% from previous day",
       color: "text-red-600",
     },
     {
-      title: "Fail Rate Today",
+      title: "Failed Settlements",
       value: "204",
-      subtitle: "↓ 2.1 Million",
+      subtitle: "5 in Fixed Income",
       color: "text-orange-600",
     },
     {
       title: "Fail Rate 7 Days",
       value: "30",
-      subtitle: "↑ 12%",
-      color: "text-green-600",
-    },
-    {
-      title: "Buy-In Intents Today",
-      value: "3",
-      subtitle: "$3.8 Million",
+      subtitle: "$43.2M",
       color: "text-blue-600",
     },
     {
+      title: "Buy-In Interest Today",
+      value: "3",
+      subtitle: "$3.4 Million",
+      color: "text-green-600",
+    },
+    {
       title: "DTC Due to Settle Today/Not affirmed",
-      value: "244",
+      value: "248",
       subtitle: "with Broadridge Capital Markets",
-      color: "text-gray-600",
+      color: "text-purple-600",
     },
     {
       title: "Failing to Deliver/Insufficient Position",
       value: "30",
-      subtitle: "Positions $3 through Deep Transfers",
+      subtitle: "Options 8 through Depot Transfer",
       color: "text-red-600",
     },
     {
-      title: "Swift Authorization Pending Approval",
+      title: "Swift Authorisation Pending Approval",
       value: "478",
       subtitle: "",
-      color: "text-orange-600",
+      color: "text-blue-600",
     },
     {
-      title: "Non- STP",
-      value: "200",
-      subtitle: "Require client action/approval client service",
-      color: "text-blue-600",
+      title: "Non - STP",
+      value: "260",
+      subtitle: "Require User Intervention",
+      color: "text-orange-600",
     },
     {
       title: "DTC Position Breaks",
       value: "459",
-      subtitle: "IBM has an inbound Corporate Action",
-      color: "text-purple-600",
+      subtitle: "IBM has an open Corporate Action",
+      color: "text-green-600",
     },
   ];
 
-  const modules = [
-    "Operations Console",
-    "Dashboard",
-    "Positions",
-    "Transactions",
-    "Opportunities",
-    "Risk Management",
-    "Trade Settlement",
-    "Corporate Actions",
-    "Client Services",
+  const recommendedQuestions = [
+    "What are my total fails and classify them by age?",
+    "What is exposure to firm TEST COMPANY failing to settle open transactions including repos?",
+    "What are my Open Exceptions for Equity Trades today?",
+    "What are my total fails for this security IBM?",
+    "What are my depot realignment opportunities for IBM?",
+    "How many unmatched Transactions we have today?",
+    "What's the projected positions for security US45200014 across depots as of 06/29/2023?",
+    "What will be my position at DTC #229 if the trades XYZ3 is not settled today?",
+    "What is my Total Margin Call Value and explain margin call and drivers.",
+    "What's the projected positions for security US45200014 across depots as of 06/29/2023?",
+    "What will be my position at DTC #229 if the trades XYZ3 is not settled today?",
+    "What is my Total Margin Call Value and explain margin call and drivers.",
+    "What are my total fails and classify them by age?",
+    "What is exposure to firm TEST COMPANY failing to settle open transactions including repos?",
+    "What are my Open Exceptions for Equity Trades today?",
   ];
 
-  const doctypes = [
+  const modules = [
+    "Operations",
+    "Risk Management",
+    "Compliance",
+    "Trade Settlement",
+    "Cash Management",
+    "Corporate Actions",
+    "Treasury",
+    "Clearing",
+    "Collateral Management",
+  ];
+  const docTypes = [
     "Trade Confirmations",
-    "Settlement Instructions",
+    "Settlement Reports",
+    "Exception Reports",
+    "Custody Reports",
+    "Cash Reports",
+    "Reconciliation Reports",
     "Corporate Action Notices",
     "Position Reports",
-    "Regulatory Filings",
-    "Client Communications",
-    "Risk Reports",
+    "Risk Exposure Summaries",
   ];
 
   const handleSendMessage = () => {
     if (inputValue.trim()) {
       setChatStarted(true);
-      setMessages([...messages, { type: "user", content: inputValue }]);
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            type: "bot",
-            content: `Based on your query about "${inputValue}", here are the relevant insights from our ${selectedGPT} analysis...`,
-          },
-        ]);
-      }, 1000);
+      setMessages([
+        ...messages,
+        { type: "user", content: inputValue },
+        {
+          type: "bot",
+          content:
+            "Thank you for your question. I'm processing your request...",
+        },
+      ]);
       setInputValue("");
     }
   };
@@ -301,267 +140,326 @@ const StateStreetOpsConsole = () => {
     );
   };
 
-  const handleDoctypeChange = (doctype) => {
-    setSelectedDoctypes((prev) =>
-      prev.includes(doctype)
-        ? prev.filter((d) => d !== doctype)
-        : [...prev, doctype]
+  const handleDocTypeChange = (docType) => {
+    setSelectedDocTypes((prev) =>
+      prev.includes(docType)
+        ? prev.filter((d) => d !== docType)
+        : [...prev, docType]
     );
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm shrink-0">
-        <div className="bg-blue-900 px-4 lg:px-6 py-3 flex items-center justify-between">
-          <div className="text-white text-xl font-bold">StateStreet</div>
-          <div className="flex items-center space-x-2 lg:space-x-4">
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 rounded bg-white text-sm w-48 lg:w-64"
-              />
-            </div>
-            <button className="bg-blue-700 px-3 lg:px-4 py-2 rounded text-white text-sm">
-              Search
-            </button>
-            <div className="text-white text-sm lg:text-base">John Smith</div>
-          </div>
+      <div className="bg-white shadow-sm">
+        <div className="bg-gradient-to-r from-indigo-700 to-blue-600 px-6 py-1.5">
+          <img
+            src={stateStreetLogo}
+            alt="State Street Logo"
+            className="h-14 w-auto object-contain"
+          />
         </div>
+        <div className="px-6 py-2.5 flex items-center justify-between border-b">
+          {/* Left: Console title with mega dropdown */}
+          <div className="relative group">
+            <div className="flex items-center space-x-2 cursor-pointer">
+              <MessageSquare className="w-6 h-6 text-blue-600" />
+              <span className="text-xl font-semibold text-gray-800">
+                Unified Console
+              </span>
+            </div>
 
-        <div className="px-4 lg:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
-          <div className="flex items-center space-x-2">
-            <MessageSquare className="w-6 h-6 text-blue-600" />
-            <span className="text-xl font-semibold text-gray-800">
-              Ops Console
-            </span>
+            {/* Mega Dropdown */}
+            <div className="absolute left-0 mt-3 w-[800px] bg-white border border-gray-200 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 p-6">
+              <div className="grid grid-cols-3 gap-6">
+                {/* Section 1 */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    Chatbot Features
+                  </h3>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="hover:text-blue-600 cursor-pointer">
+                      Trade Settlement Queries
+                    </li>
+                    <li className="hover:text-blue-600 cursor-pointer">
+                      Exception Management
+                    </li>
+                    <li className="hover:text-blue-600 cursor-pointer">
+                      Risk Exposure Monitoring
+                    </li>
+                    <li className="hover:text-blue-600 cursor-pointer">
+                      Compliance Checks
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Section 2 */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    Use Cases
+                  </h3>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="hover:text-blue-600 cursor-pointer">
+                      Daily Fail Reports
+                    </li>
+                    <li className="hover:text-blue-600 cursor-pointer">
+                      Margin Call Assistance
+                    </li>
+                    <li className="hover:text-blue-600 cursor-pointer">
+                      Corporate Action Alerts
+                    </li>
+                    <li className="hover:text-blue-600 cursor-pointer">
+                      Cash & Liquidity Queries
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Section 3 */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    Featured Insights
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="p-3 border rounded-lg bg-gray-50 hover:bg-blue-50 cursor-pointer">
+                      📊{" "}
+                      <span className="font-medium">
+                        AI-driven Settlement Predictions
+                      </span>
+                      <p className="text-xs text-gray-500">
+                        Forecast trade fails based on historical data
+                      </p>
+                    </div>
+                    <div className="p-3 border rounded-lg bg-gray-50 hover:bg-blue-50 cursor-pointer">
+                      🔍{" "}
+                      <span className="font-medium">
+                        Exception Root Cause Finder
+                      </span>
+                      <p className="text-xs text-gray-500">
+                        Get automated explanations for failed trades
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <nav className="flex space-x-4 lg:space-x-6">
+
+          {/* Right: Nav links */}
+          <div className="flex items-center space-x-6">
             <a
               href="#"
-              className="flex items-center space-x-1 text-blue-600 hover:text-blue-800"
+              className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium"
             >
               <BarChart3 className="w-4 h-4" />
-              <span className="text-sm lg:text-base">Dashboard</span>
+              <span>Dashboard</span>
             </a>
             <a
               href="#"
-              className="flex items-center space-x-1 text-blue-600 hover:text-blue-800"
+              className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium"
             >
               <FileText className="w-4 h-4" />
-              <span className="text-sm lg:text-base">Reports</span>
+              <span>Reports</span>
             </a>
-          </nav>
-        </div>
-      </header>
-
-      {/* Main Layout */}
-      <div className="flex flex-1 overflow-hidden gap-2 lg:gap-4 px-2 lg:px-6 pb-2 lg:pb-4 pt-2">
-        {/* Left - Chat */}
-        <div className="flex-1 flex flex-col bg-white rounded-lg shadow min-w-0">
-          {/* GPT Buttons Centered */}
-          <div className="p-3 lg:p-4 border-b flex justify-center shrink-0">
-            <div className="flex">
-              <button
-                onClick={() => setSelectedGPT("Raw Infobot")}
-                className={`px-4 lg:px-6 py-2 rounded-l-lg font-medium text-sm lg:text-base ${
-                  selectedGPT === "Raw Infobot"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-300 text-gray-700"
-                }`}
-              >
-                Raw Infobot
-              </button>
-              <button
-                onClick={() => setSelectedGPT("EE")}
-                className={`px-4 lg:px-6 py-2 rounded-r-lg font-medium text-sm lg:text-base ${
-                  selectedGPT === "EE"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-300 text-gray-700"
-                }`}
-              >
-                EE
-              </button>
-            </div>
           </div>
+        </div>
+      </div>
 
-          {/* View Toggle */}
-          {!chatStarted && (
-            <div className="p-2 flex justify-center space-x-2 lg:space-x-4 shrink-0">
-              <button
-                onClick={() => setSelectedView("Insights")}
-                className={`px-3 lg:px-4 py-2 rounded-lg font-medium text-sm lg:text-base ${
-                  selectedView === "Insights"
-                    ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Insights
-              </button>
-              <button
-                onClick={() => setSelectedView("Recommended Questions")}
-                className={`px-3 lg:px-4 py-2 rounded-lg font-medium text-sm lg:text-base ${
-                  selectedView === "Recommended Questions"
-                    ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Recommended Questions
-              </button>
-            </div>
-          )}
+      {/* Main Content */}
+      <div className="flex gap-6 px-3 pt-3 pb-6 h-[calc(100vh-100px)] overflow-hidden">
+        {/* Chat Section */}
+        <div className="flex-[0.8] bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col overflow-hidden">
+          {/* Content area */}
+          {!chatStarted ? (
+            <div className="flex-1 flex flex-col p-4 overflow-hidden">
+              {/* Bot selection */}
+              <div className="flex justify-center mb-2">
+                <div className="flex bg-gray-100 rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                  <button
+                    onClick={() => setSelectedBot("Raw Infobot")}
+                    className={`px-6 py-2 text-sm font-medium ${
+                      selectedBot === "Raw Infobot"
+                        ? "bg-blue-600 text-white"
+                        : "bg-white text-gray-600 hover:bg-gray-50 border-r"
+                    }`}
+                  >
+                    Raw Infobot
+                  </button>
+                  <button
+                    onClick={() => setSelectedBot("EE")}
+                    className={`px-6 py-2 text-sm font-medium ${
+                      selectedBot === "EE"
+                        ? "bg-blue-600 text-white"
+                        : "bg-white text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    EE
+                  </button>
+                </div>
+              </div>
+              {/* View selection */}
+              <div className="flex justify-center mb-4">
+                <div className="p-2 flex justify-center space-x-2 lg:space-x-4 shrink-0">
+                  <button
+                    onClick={() => setSelectedView("Insights")}
+                    className={`px-6 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      selectedView === "Insights"
+                        ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    Insights
+                  </button>
 
-          {/* Chat Content Scrollable */}
-          <div className="flex-1 p-3 lg:p-4 overflow-y-auto min-h-0">
-            {!chatStarted ? (
-              <>
+                  <button
+                    onClick={() => setSelectedView("Recommended Questions")}
+                    className={`px-6 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      selectedView === "Recommended Questions"
+                        ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    Recommended Questions
+                  </button>
+                </div>
+              </div>
+              {/* Insights or Questions */}
+              <div className="flex-1 overflow-y-auto">
                 {selectedView === "Insights" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
-                    {insights.map((insight, index) => (
+                  <div className="grid grid-cols-3 gap-4">
+                    {insights.map((insight, i) => (
                       <div
-                        key={index}
-                        className="bg-gray-50 p-3 lg:p-4 rounded-lg border min-h-24 lg:min-h-28 flex flex-col justify-between"
+                        key={i}
+                        className="p-4 bg-gray-100 border rounded-lg shadow-sm hover:shadow-md transition"
                       >
-                        <h3 className="font-medium text-gray-700 text-xs lg:text-sm leading-tight">
+                        <div className="text-xs font-medium text-gray-600">
                           {insight.title}
-                        </h3>
-                        <div
-                          className={`text-xl lg:text-2xl font-bold ${insight.color} my-1`}
-                        >
+                        </div>
+                        <div className={`text-lg font-bold ${insight.color}`}>
                           {insight.value}
                         </div>
-                        {insight.subtitle && (
-                          <p className="text-xs text-gray-500">
-                            {insight.subtitle}
-                          </p>
-                        )}
+                        <div className="text-xs text-gray-500">
+                          {insight.subtitle}
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
-                    {[
-                      "What are my total fails and classify them by age?",
-                      "What is exposure to firm TEST COMPANY failing to settle open transactions including repos?",
-                      "What are my Open Exceptions for Equity Trades today?",
-                      "What are my total fails for this security IBM?",
-                      "What are my depot realignment opportunities for IBM?",
-                      "How many unmatched Transactions we have today?",
-                      "What's the projected positions for security US4592001014 across depots as of 06/29/2023?",
-                      "What will be my position at DTC #229 if the trades XYZ3 is not settled today?",
-                      "What is my Total Margin Call Value and explain margin call and drivers",
-                    ].map((q, i) => (
+                  <div className="grid grid-cols-3 gap-3.5">
+                    {recommendedQuestions.map((q, i) => (
                       <div
                         key={i}
-                        className="bg-gray-50 p-3 lg:p-4 rounded-lg border min-h-24 lg:min-h-28 flex items-center justify-center text-center text-xs lg:text-sm hover:bg-gray-100 cursor-pointer transition-colors"
                         onClick={() => setInputValue(q)}
+                        className="p-3 text-xs text-gray-700 bg-gray-100 border rounded-lg shadow-sm hover:bg-blue-50 hover:shadow-md cursor-pointer"
                       >
                         {q}
                       </div>
                     ))}
                   </div>
                 )}
-              </>
-            ) : (
-              <div className="space-y-4">
-                {messages.map((m, i) => (
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {messages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex ${
+                    msg.type === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
                   <div
-                    key={i}
-                    className={`flex ${
-                      m.type === "user" ? "justify-end" : "justify-start"
+                    className={`px-4 py-2 rounded-xl shadow-sm max-w-[75%] text-sm ${
+                      msg.type === "user"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-50 border text-gray-800"
                     }`}
                   >
-                    <div
-                      className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-2 rounded-lg text-sm lg:text-base ${
-                        m.type === "user"
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-200 text-gray-800"
-                      }`}
-                    >
-                      {m.content}
-                    </div>
+                    {msg.content}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-          {/* Chat Input */}
-          <div className="p-3 lg:p-4 border-t shrink-0">
-            <div className="flex items-center space-x-2">
+          {/* ✅ Input field always visible */}
+          <div className="shrink-0 border-t bg-gray-50 p-3">
+            <div className="flex space-x-2">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                placeholder="Ask a question..."
-                className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
+                placeholder="Ask something..."
+                className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
               />
+
               <button
                 onClick={handleSendMessage}
-                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center"
               >
-                <Send className="w-4 lg:w-5 h-4 lg:h-5" />
+                <Send className="w-4 h-4 mr-1" /> Send
               </button>
             </div>
           </div>
         </div>
 
-        {/* Right - Filters (Fixed, No Scroll) */}
-        <div className="w-72 lg:w-96 flex flex-col bg-white rounded-lg shadow p-3 lg:p-4 shrink-0">
-          {/* Scroll removed from here */}
-          <div className="space-y-4 flex-1">
+        {/* Filters Section */}
+        <div className="flex-[0.2] bg-white rounded-xl shadow-lg border border-gray-200 p-4 flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto space-y-6 text-sm">
+            {/* Modules */}
             <div>
-              <h3 className="font-semibold text-gray-800 mb-2 text-sm lg:text-base">
-                Modules
+              <h3 className="font-semibold flex items-center mb-2">
+                <BarChart3 className="w-4 h-4 mr-2 text-blue-600" /> Modules
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+              <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2 bg-gray-50">
                 {modules.map((m) => (
                   <label
                     key={m}
-                    className="flex items-center space-x-2 text-xs lg:text-sm"
+                    className="flex items-center space-x-2 text-sm"
                   >
                     <input
                       type="checkbox"
                       checked={selectedModules.includes(m)}
                       onChange={() => handleModuleChange(m)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="w-4 h-4"
                     />
-                    <span className="leading-tight">{m}</span>
+                    <span>{m}</span>
                   </label>
                 ))}
               </div>
             </div>
 
+            {/* Document Types */}
             <div>
-              <h3 className="font-semibold text-gray-800 mb-2 text-sm lg:text-base">
-                Document Type
+              <h3 className="font-semibold flex items-center mb-2">
+                <FileText className="w-4 h-4 mr-2 text-blue-600" /> Document
+                Types
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                {doctypes.map((d) => (
+              <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2 bg-gray-50">
+                {docTypes.map((d) => (
                   <label
                     key={d}
-                    className="flex items-center space-x-2 text-xs lg:text-sm"
+                    className="flex items-center space-x-2 text-sm"
                   >
                     <input
                       type="checkbox"
-                      checked={selectedDoctypes.includes(d)}
-                      onChange={() => handleDoctypeChange(d)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={selectedDocTypes.includes(d)}
+                      onChange={() => handleDocTypeChange(d)}
+                      className="w-4 h-4"
                     />
-                    <span className="leading-tight">{d}</span>
+                    <span>{d}</span>
                   </label>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Button pinned at bottom */}
-          <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-medium mt-4 text-sm lg:text-base">
-            Generate Reports & Dashboard
-          </button>
+          {/* Submit button pinned bottom */}
+          <div className="shrink-0 mt-4">
+            <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Submit
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -569,4 +467,3 @@ const StateStreetOpsConsole = () => {
 };
 
 export default StateStreetOpsConsole;
-
