@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, KeyboardEvent } from "react";
 import {
   Search,
   MessageSquare,
@@ -9,16 +9,33 @@ import {
 } from "lucide-react";
 import stateStreetLogo from "../assets/logo.png";
 
-const StateStreetOpsConsole = () => {
-  const [selectedBot, setSelectedBot] = useState("Raw Infobot");
-  const [selectedView, setSelectedView] = useState("Insights");
-  const [chatStarted, setChatStarted] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [inputValue, setInputValue] = useState("");
-  const [selectedModules, setSelectedModules] = useState([]);
-  const [selectedDocTypes, setSelectedDocTypes] = useState([]);
+// ✅ Types
+type Message = {
+  type: "user" | "bot";
+  content: string;
+};
 
-  const insights = [
+type Insight = {
+  title: string;
+  value: string;
+  subtitle: string;
+  color: string;
+};
+
+const StateStreetOpsConsole: React.FC = () => {
+  const [selectedBot, setSelectedBot] = useState<"Raw Infobot" | "EE">(
+    "Raw Infobot"
+  );
+  const [selectedView, setSelectedView] = useState<
+    "Insights" | "Recommended Questions"
+  >("Insights");
+  const [chatStarted, setChatStarted] = useState<boolean>(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState<string>("");
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
+  const [selectedDocTypes, setSelectedDocTypes] = useState<string[]>([]);
+
+  const insights: Insight[] = [
     {
       title: "Total Fails Today",
       value: "35,453",
@@ -75,7 +92,7 @@ const StateStreetOpsConsole = () => {
     },
   ];
 
-  const recommendedQuestions = [
+  const recommendedQuestions: string[] = [
     "What are my total fails and classify them by age?",
     "What is exposure to firm TEST COMPANY failing to settle open transactions including repos?",
     "What are my Open Exceptions for Equity Trades today?",
@@ -93,7 +110,7 @@ const StateStreetOpsConsole = () => {
     "What are my Open Exceptions for Equity Trades today?",
   ];
 
-  const modules = [
+  const modules: string[] = [
     "Operations",
     "Risk Management",
     "Compliance",
@@ -104,7 +121,8 @@ const StateStreetOpsConsole = () => {
     "Clearing",
     "Collateral Management",
   ];
-  const docTypes = [
+
+  const docTypes: string[] = [
     "Trade Confirmations",
     "Settlement Reports",
     "Exception Reports",
@@ -119,8 +137,8 @@ const StateStreetOpsConsole = () => {
   const handleSendMessage = () => {
     if (inputValue.trim()) {
       setChatStarted(true);
-      setMessages([
-        ...messages,
+      setMessages((prev) => [
+        ...prev,
         { type: "user", content: inputValue },
         {
           type: "bot",
@@ -132,7 +150,7 @@ const StateStreetOpsConsole = () => {
     }
   };
 
-  const handleModuleChange = (module) => {
+  const handleModuleChange = (module: string) => {
     setSelectedModules((prev) =>
       prev.includes(module)
         ? prev.filter((m) => m !== module)
@@ -140,12 +158,16 @@ const StateStreetOpsConsole = () => {
     );
   };
 
-  const handleDocTypeChange = (docType) => {
+  const handleDocTypeChange = (docType: string) => {
     setSelectedDocTypes((prev) =>
       prev.includes(docType)
         ? prev.filter((d) => d !== docType)
         : [...prev, docType]
     );
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSendMessage();
   };
 
   return (
@@ -390,7 +412,7 @@ const StateStreetOpsConsole = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Ask something..."
                 className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                onKeyDown={handleKeyDown}
               />
 
               <button
