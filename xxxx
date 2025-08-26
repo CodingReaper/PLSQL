@@ -1,486 +1,317 @@
-import React, { useState, KeyboardEvent } from "react";
+import React, { useState, useMemo } from "react";
 import {
-  Search,
-  MessageSquare,
-  FileText,
   BarChart3,
-  Send,
-  Mic,
+  Filter,
+  Search,
 } from "lucide-react";
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+  MRT_ColumnDef,
+  MRT_Row,
+  MRT_TableInstance,
+} from "material-react-table";
+import { Box, Button } from "@mui/material";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import { mkConfig, generateCsv, download } from "export-to-csv";
 import stateStreetLogo from "../assets/logo.png";
 
-// ✅ Types
-type Message = {
-  type: "user" | "bot";
-  content: string;
+// ---------------- TYPES ----------------
+interface Person {
+  id: number;
+  firstName: string;
+  lastName: string;
+  company: string;
+  city: string;
+  country: string;
+}
+
+interface Trade {
+  id: string;
+  symbol: string;
+  quantity: string;
+  price: string;
+  status: string;
+}
+
+type TableKey = "people" | "trades";
+
+// ---------------- SAMPLE DATA ----------------
+const peopleData: Person[] = [
+  {
+    id: 1,
+    firstName: "John",
+    lastName: "Doe",
+    company: "Acme Inc.",
+    city: "East Daphne",
+    country: "USA",
+  },
+  {
+    id: 2,
+    firstName: "Jane",
+    lastName: "Doe",
+    company: "Beta Corp",
+    city: "Columbus",
+    country: "USA",
+  },
+  {
+    id: 3,
+    firstName: "Joe",
+    lastName: "Doe",
+    company: "Gamma LLC",
+    city: "South Linda",
+    country: "USA",
+  },
+];
+
+const tradesData: Trade[] = [
+  {
+    id: "TRD-001",
+    symbol: "AAPL",
+    quantity: "1000",
+    price: "150.25",
+    status: "Settled",
+  },
+  {
+    id: "TRD-002",
+    symbol: "MSFT",
+    quantity: "500",
+    price: "320.80",
+    status: "Failed",
+  },
+  {
+    id: "TRD-003",
+    symbol: "GOOGL",
+    quantity: "200",
+    price: "2750.30",
+    status: "Pending",
+  },
+];
+
+// ---------------- CONFIG ----------------
+const tableConfigs: Record<
+  TableKey,
+  {
+    name: string;
+    data: Person[] | Trade[];
+    columns: MRT_ColumnDef<Person | Trade>[];
+  }
+> = {
+  people: {
+    name: "People",
+    data: peopleData,
+    columns: [
+      { accessorKey: "id", header: "ID" },
+      { accessorKey: "firstName", header: "First Name" },
+      { accessorKey: "lastName", header: "Last Name" },
+      { accessorKey: "company", header: "Company" },
+      { accessorKey: "city", header: "City" },
+      { accessorKey: "country", header: "Country" },
+    ],
+  },
+  trades: {
+    name: "Trades",
+    data: tradesData,
+    columns: [
+      { accessorKey: "id", header: "Trade ID" },
+      { accessorKey: "symbol", header: "Symbol" },
+      { accessorKey: "quantity", header: "Quantity" },
+      { accessorKey: "price", header: "Price" },
+      { accessorKey: "status", header: "Status" },
+    ],
+  },
 };
 
-type Insight = {
-  title: string;
-  value: string;
-  subtitle: string;
-  color: string;
-};
+// ---------------- CSV CONFIG ----------------
+const csvConfig = mkConfig({
+  fieldSeparator: ",",
+  decimalSeparator: ".",
+  useKeysAsHeaders: true,
+});
 
-const StateStreetOpsConsole: React.FC = () => {
-  const [selectedBot, setSelectedBot] = useState<"Raw Infobot" | "EE">(
-    "Raw Infobot"
+// ---------------- MAIN COMPONENT ----------------
+const DataGridDashboard: React.FC = () => {
+  const [selectedTable, setSelectedTable] = useState<TableKey | "">(""); // dropdown state
+  const [appliedTable, setAppliedTable] = useState<TableKey | "">(""); // applied on submit
+
+  const config = appliedTable ? tableConfigs[appliedTable] : null;
+  const columns = useMemo<MRT_ColumnDef<Person | Trade>[]>(
+    () => (config ? config.columns : []),
+    [config]
   );
-  const [selectedView, setSelectedView] = useState<
-    "Insights" | "Recommended Questions"
-  >("Insights");
-  const [chatStarted, setChatStarted] = useState<boolean>(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState<string>("");
-  const [selectedModules, setSelectedModules] = useState<string[]>([]);
-  const [selectedDocTypes, setSelectedDocTypes] = useState<string[]>([]);
+  const data = useMemo<(Person | Trade)[]>(() => (config ? config.data : []), [config]);
 
-  const insights: Insight[] = [
-    {
-      title: "Total Fails Today",
-      value: "35,453",
-      subtitle: "10.2% from previous day",
-      color: "text-red-600",
-    },
-    {
-      title: "Failed Settlements",
-      value: "204",
-      subtitle: "5 in Fixed Income",
-      color: "text-orange-600",
-    },
-    {
-      title: "Fail Rate 7 Days",
-      value: "30",
-      subtitle: "$43.2M",
-      color: "text-blue-600",
-    },
-    {
-      title: "Buy-In Interest Today",
-      value: "3",
-      subtitle: "$3.4 Million",
-      color: "text-green-600",
-    },
-    {
-      title: "DTC Due to Settle Today/Not affirmed",
-      value: "248",
-      subtitle: "with Broadridge Capital Markets",
-      color: "text-purple-600",
-    },
-    {
-      title: "Failing to Deliver/Insufficient Position",
-      value: "30",
-      subtitle: "Options 8 through Depot Transfer",
-      color: "text-red-600",
-    },
-    {
-      title: "Swift Authorisation Pending Approval",
-      value: "478",
-      subtitle: "",
-      color: "text-blue-600",
-    },
-    {
-      title: "Non - STP",
-      value: "260",
-      subtitle: "Require User Intervention",
-      color: "text-orange-600",
-    },
-    {
-      title: "DTC Position Breaks",
-      value: "459",
-      subtitle: "IBM has an open Corporate Action",
-      color: "text-green-600",
-    },
-  ];
-
-  const recommendedQuestions: string[] = [
-    "What are my total fails and classify them by age?",
-    "What is exposure to firm TEST COMPANY failing to settle open transactions including repos?",
-    "What are my Open Exceptions for Equity Trades today?",
-    "What are my total fails for this security IBM?",
-    "What are my depot realignment opportunities for IBM?",
-    "How many unmatched Transactions we have today?",
-    "What's the projected positions for security US45200014 across depots as of 06/29/2023?",
-    "What will be my position at DTC #229 if the trades XYZ3 is not settled today?",
-    "What is my Total Margin Call Value and explain margin call and drivers.",
-    "What's the projected positions for security US45200014 across depots as of 06/29/2023?",
-    "What will be my position at DTC #229 if the trades XYZ3 is not settled today?",
-    "What is my Total Margin Call Value and explain margin call and drivers.",
-    "What are my total fails and classify them by age?",
-    "What is exposure to firm TEST COMPANY failing to settle open transactions including repos?",
-    "What are my Open Exceptions for Equity Trades today?",
-  ];
-
-  const modules: string[] = [
-    "Operations",
-    "Risk Management",
-    "Compliance",
-    "Trade Settlement",
-    "Cash Management",
-    "Corporate Actions",
-    "Treasury",
-    "Clearing",
-    "Collateral Management",
-  ];
-
-  const docTypes: string[] = [
-    "Trade Confirmations",
-    "Settlement Reports",
-    "Exception Reports",
-    "Custody Reports",
-    "Cash Reports",
-    "Reconciliation Reports",
-    "Corporate Action Notices",
-    "Position Reports",
-    "Risk Exposure Summaries",
-  ];
-
-  const handleSendMessage = () => {
-    if (inputValue.trim()) {
-      setChatStarted(true);
-      setMessages((prev) => [
-        ...prev,
-        { type: "user", content: inputValue },
-        {
-          type: "bot",
-          content:
-            "Thank you for your question. I'm processing your request...",
-        },
-      ]);
-      setInputValue("");
-    }
+  // CSV Export Handlers
+  const handleExportRows = (rows: MRT_Row<Person | Trade>[]) => {
+    const rowData = rows.map((row) => row.original);
+    const csv = generateCsv(csvConfig)(rowData);
+    download(csvConfig)(csv);
   };
 
-  const handleModuleChange = (module: string) => {
-    setSelectedModules((prev) =>
-      prev.includes(module)
-        ? prev.filter((m) => m !== module)
-        : [...prev, module]
-    );
+  const handleExportData = () => {
+    const csv = generateCsv(csvConfig)(data);
+    download(csvConfig)(csv);
   };
 
-  const handleDocTypeChange = (docType: string) => {
-    setSelectedDocTypes((prev) =>
-      prev.includes(docType)
-        ? prev.filter((d) => d !== docType)
-        : [...prev, docType]
-    );
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") handleSendMessage();
-  };
+  const table = useMaterialReactTable<Person | Trade>({
+    columns,
+    data,
+    enableRowSelection: true,
+    columnFilterDisplayMode: "popover",
+    paginationDisplayMode: "pages",
+    positionToolbarAlertBanner: "bottom",
+    initialState: { density: "compact", showColumnFilters: true },
+    enableColumnResizing: true,
+    defaultColumn: { size: 170 },
+    muiTableHeadCellProps: {
+      sx: {
+        color: "rgb(55,65,81)", // gray-700
+        fontWeight: "600",
+        backgroundColor: "#e0e0e0", // gray-100
+      },
+    },
+    muiTableBodyRowProps: {
+      sx: {
+        backgroundColor: "#f5f5f5",
+      },
+    },
+    renderTopToolbarCustomActions: ({ table }: { table: MRT_TableInstance<Person | Trade> }) => (
+      <Box
+        sx={{
+          display: "flex",
+          gap: "16px",
+          padding: "8px",
+          flexWrap: "wrap",
+        }}
+      >
+        <Button onClick={handleExportData} startIcon={<FileDownloadIcon />}>
+          Export All Data
+        </Button>
+        <Button
+          disabled={table.getPrePaginationRowModel().rows.length === 0}
+          onClick={() =>
+            handleExportRows(table.getPrePaginationRowModel().rows)
+          }
+          startIcon={<FileDownloadIcon />}
+          className="text-blue-600"
+        >
+          Export All Rows
+        </Button>
+        <Button
+          disabled={table.getRowModel().rows.length === 0}
+          onClick={() => handleExportRows(table.getRowModel().rows)}
+          startIcon={<FileDownloadIcon />}
+        >
+          Export Page Rows
+        </Button>
+        <Button
+          disabled={
+            !table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()
+          }
+          onClick={() => handleExportRows(table.getSelectedRowModel().rows)}
+          startIcon={<FileDownloadIcon />}
+        >
+          Export Selected Rows
+        </Button>
+      </Box>
+    ),
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* ---------------- HEADER ---------------- */}
       <div className="bg-white shadow-sm">
         <div className="bg-gradient-to-r from-indigo-700 to-blue-600 px-6 py-1.5">
-          <img
-            src={stateStreetLogo}
-            alt="State Street Logo"
-            className="h-14 w-auto object-contain"
-          />
-        </div>
-        <div className="px-6 py-2.5 flex items-center justify-between border-b">
-          {/* Left: Console title with mega dropdown */}
-          <div className="relative group">
-            <div className="flex items-center space-x-2 cursor-pointer">
-              <MessageSquare className="w-6 h-6 text-blue-600" />
-              <span className="text-xl font-semibold text-gray-800">
-                Unified Console
-              </span>
+          <div className="h-14 flex items-center">
+            <div className="text-white font-bold text-xl">
+              <img
+                src={stateStreetLogo}
+                alt="State Street Logo"
+                className="h-14 w-auto object-contain"
+              />
             </div>
-
-            {/* Mega Dropdown */}
-            <div className="absolute left-0 mt-3 w-[800px] bg-white border border-gray-200 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 p-6">
-              <div className="grid grid-cols-3 gap-6">
-                {/* Section 1 */}
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                    Chatbot Features
-                  </h3>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="hover:text-blue-600 cursor-pointer">
-                      Trade Settlement Queries
-                    </li>
-                    <li className="hover:text-blue-600 cursor-pointer">
-                      Exception Management
-                    </li>
-                    <li className="hover:text-blue-600 cursor-pointer">
-                      Risk Exposure Monitoring
-                    </li>
-                    <li className="hover:text-blue-600 cursor-pointer">
-                      Compliance Checks
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Section 2 */}
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                    Use Cases
-                  </h3>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="hover:text-blue-600 cursor-pointer">
-                      Daily Fail Reports
-                    </li>
-                    <li className="hover:text-blue-600 cursor-pointer">
-                      Margin Call Assistance
-                    </li>
-                    <li className="hover:text-blue-600 cursor-pointer">
-                      Corporate Action Alerts
-                    </li>
-                    <li className="hover:text-blue-600 cursor-pointer">
-                      Cash & Liquidity Queries
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Section 3 */}
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                    Featured Insights
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="p-3 border rounded-lg bg-gray-50 hover:bg-blue-50 cursor-pointer">
-                      📊{" "}
-                      <span className="font-medium">
-                        AI-driven Settlement Predictions
-                      </span>
-                      <p className="text-xs text-gray-500">
-                        Forecast trade fails based on historical data
-                      </p>
-                    </div>
-                    <div className="p-3 border rounded-lg bg-gray-50 hover:bg-blue-50 cursor-pointer">
-                      🔍{" "}
-                      <span className="font-medium">
-                        Exception Root Cause Finder
-                      </span>
-                      <p className="text-xs text-gray-500">
-                        Get automated explanations for failed trades
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Nav links */}
-          <div className="flex items-center space-x-6">
-            <a
-              href="#"
-              className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium"
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span>Dashboard</span>
-            </a>
-            <a
-              href="#"
-              className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium"
-            >
-              <FileText className="w-4 h-4" />
-              <span>Reports</span>
-            </a>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex gap-6 px-3 pt-3 pb-6 h-[calc(100vh-100px)] overflow-hidden">
-        {/* Chat Section */}
+      {/* ---------------- MAIN CONTENT ---------------- */}
+      <div className="flex-1 flex gap-6 px-3 pt-3 pb-6 overflow-hidden">
+        {/* Data Grid Section (70%) */}
         <div className="flex-[0.8] bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col overflow-hidden">
-          {/* Content area */}
-          {!chatStarted ? (
-            <div className="flex-1 flex flex-col p-4 overflow-hidden">
-              {/* Bot selection */}
-              <div className="flex justify-center mb-2">
-                <div className="flex bg-gray-100 rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                  <button
-                    onClick={() => setSelectedBot("Raw Infobot")}
-                    className={`px-6 py-2 text-sm font-medium ${
-                      selectedBot === "Raw Infobot"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50 border-r"
-                    }`}
-                  >
-                    Raw Infobot
-                  </button>
-                  <button
-                    onClick={() => setSelectedBot("EE")}
-                    className={`px-6 py-2 text-sm font-medium ${
-                      selectedBot === "EE"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    EE
-                  </button>
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+              <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+              Data Grid
+              {appliedTable && (
+                <span className="ml-2 text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded">
+                  {config?.name}
+                </span>
+              )}
+            </h2>
+          </div>
+
+          <div className="flex-1 p-0 overflow-hidden">
+            {appliedTable && data.length > 0 ? (
+              <div className="h-full w-full">
+                <MaterialReactTable table={table} enableStickyFooter />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="text-center">
+                  <Search className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium mb-2">No Data Selected</p>
+                  <p className="text-sm">
+                    Please select a table and click Submit to view data.
+                  </p>
                 </div>
               </div>
-              {/* View selection */}
-              <div className="flex justify-center mb-4">
-                <div className="p-2 flex justify-center space-x-2 lg:space-x-4 shrink-0">
-                  <button
-                    onClick={() => setSelectedView("Insights")}
-                    className={`px-6 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      selectedView === "Insights"
-                        ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    Insights
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedView("Recommended Questions")}
-                    className={`px-6 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      selectedView === "Recommended Questions"
-                        ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    Recommended Questions
-                  </button>
-                </div>
-              </div>
-              {/* Insights or Questions */}
-              <div className="flex-1 overflow-y-auto">
-                {selectedView === "Insights" ? (
-                  <div className="grid grid-cols-3 gap-4">
-                    {insights.map((insight, i) => (
-                      <div
-                        key={i}
-                        className="p-4 bg-gray-100 border rounded-lg shadow-sm hover:shadow-md transition"
-                      >
-                        <div className="text-xs font-medium text-gray-600">
-                          {insight.title}
-                        </div>
-                        <div className={`text-lg font-bold ${insight.color}`}>
-                          {insight.value}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {insight.subtitle}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-3.5">
-                    {recommendedQuestions.map((q, i) => (
-                      <div
-                        key={i}
-                        onClick={() => setInputValue(q)}
-                        className="p-3 text-xs text-gray-700 bg-gray-100 border rounded-lg shadow-sm hover:bg-blue-50 hover:shadow-md cursor-pointer"
-                      >
-                        {q}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${
-                    msg.type === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`px-4 py-2 rounded-xl shadow-sm max-w-[75%] text-sm ${
-                      msg.type === "user"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-50 border text-gray-800"
-                    }`}
-                  >
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ✅ Input field always visible */}
-          <div className="shrink-0 border-t bg-gray-50 p-3">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask something..."
-                className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyDown={handleKeyDown}
-              />
-
-              <button
-                onClick={handleSendMessage}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center"
-              >
-                <Send className="w-4 h-4 mr-1" /> Send
-              </button>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Filters Section */}
-        <div className="flex-[0.2] bg-white rounded-xl shadow-lg border border-gray-200 p-4 flex flex-col h-full">
-          <div className="flex-1 overflow-y-auto space-y-6 text-sm">
-            {/* Modules */}
-            <div>
-              <h3 className="font-semibold flex items-center mb-2">
-                <BarChart3 className="w-4 h-4 mr-2 text-blue-600" /> Modules
-              </h3>
-              <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2 bg-gray-50">
-                {modules.map((m) => (
-                  <label
-                    key={m}
-                    className="flex items-center space-x-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedModules.includes(m)}
-                      onChange={() => handleModuleChange(m)}
-                      className="w-4 h-4"
-                    />
-                    <span>{m}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Document Types */}
-            <div>
-              <h3 className="font-semibold flex items-center mb-2">
-                <FileText className="w-4 h-4 mr-2 text-blue-600" /> Document
-                Types
-              </h3>
-              <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2 bg-gray-50">
-                {docTypes.map((d) => (
-                  <label
-                    key={d}
-                    className="flex items-center space-x-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedDocTypes.includes(d)}
-                      onChange={() => handleDocTypeChange(d)}
-                      className="w-4 h-4"
-                    />
-                    <span>{d}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+        {/* Filter Section (30%) */}
+        <div className="flex-[0.2] bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+              <Filter className="w-5 h-5 mr-2 text-blue-600" />
+              Filters
+            </h2>
           </div>
+          <div className="flex-1 p-4 space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Select Table
+              </label>
+              <select
+                value={selectedTable}
+                onChange={(e) => setSelectedTable(e.target.value as TableKey)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              >
+                <option value="">Choose a table...</option>
+                {Object.entries(tableConfigs).map(([key, cfg]) => (
+                  <option key={key} value={key}>
+                    {cfg.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Submit button pinned bottom */}
-          <div className="shrink-0 mt-4">
-            <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <Button
+              fullWidth
+              disabled={!selectedTable}
+              onClick={() => setAppliedTable(selectedTable)}
+              sx={{
+                background: "#2563eb",
+                color: "white",
+                fontWeight: "400",
+                textTransform: "none",
+                "&:hover": {
+                  background: "linear-gradient(to right, #3730a3, #1e40af)",
+                },
+              }}
+            >
               Submit
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -488,4 +319,4 @@ const StateStreetOpsConsole: React.FC = () => {
   );
 };
 
-export default StateStreetOpsConsole;
+export default DataGridDashboard;
