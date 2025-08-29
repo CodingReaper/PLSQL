@@ -1,10 +1,9 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import { BarChart3, Filter, Search } from "lucide-react";
 import { AgGridReact } from "ag-grid-react"; // ✅ Ag-Grid
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
-import { Box, Button } from "@mui/material";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import { Button } from "@mui/material";
 import stateStreetLogo from "../assets/logo.png";
 
 // ---------------- TYPES ----------------
@@ -29,54 +28,15 @@ type TableKey = "people" | "trades";
 
 // ---------------- SAMPLE DATA ----------------
 const peopleData: Person[] = [
-  {
-    id: 1,
-    firstName: "John",
-    lastName: "Doe",
-    company: "Acme Inc.",
-    city: "East Daphne",
-    country: "USA",
-  },
-  {
-    id: 2,
-    firstName: "Jane",
-    lastName: "Doe",
-    company: "Beta Corp",
-    city: "Columbus",
-    country: "USA",
-  },
-  {
-    id: 3,
-    firstName: "Joe",
-    lastName: "Doe",
-    company: "Gamma LLC",
-    city: "South Linda",
-    country: "USA",
-  },
+  { id: 1, firstName: "John", lastName: "Doe", company: "Acme Inc.", city: "East Daphne", country: "USA" },
+  { id: 2, firstName: "Jane", lastName: "Doe", company: "Beta Corp", city: "Columbus", country: "USA" },
+  { id: 3, firstName: "Joe", lastName: "Doe", company: "Gamma LLC", city: "South Linda", country: "USA" },
 ];
 
 const tradesData: Trade[] = [
-  {
-    id: "TRD-001",
-    symbol: "AAPL",
-    quantity: "1000",
-    price: "150.25",
-    status: "Settled",
-  },
-  {
-    id: "TRD-002",
-    symbol: "MSFT",
-    quantity: "500",
-    price: "320.80",
-    status: "Failed",
-  },
-  {
-    id: "TRD-003",
-    symbol: "GOOGL",
-    quantity: "200",
-    price: "2750.30",
-    status: "Pending",
-  },
+  { id: "TRD-001", symbol: "AAPL", quantity: "1000", price: "150.25", status: "Settled" },
+  { id: "TRD-002", symbol: "MSFT", quantity: "500", price: "320.80", status: "Failed" },
+  { id: "TRD-003", symbol: "GOOGL", quantity: "200", price: "2750.30", status: "Pending" },
 ];
 
 // ---------------- CONFIG ----------------
@@ -117,20 +77,10 @@ const tableConfigs: Record<
 const DataGridDashboard: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<TableKey | "">("");
   const [appliedTable, setAppliedTable] = useState<TableKey | "">("");
-  const gridRef = useRef<AgGridReact>(null);
 
   const config = appliedTable ? tableConfigs[appliedTable] : null;
   const columns = useMemo(() => (config ? config.columns : []), [config]);
   const data = useMemo(() => (config ? config.data : []), [config]);
-
-  // CSV/Excel Export
-  const handleExportCSV = () => {
-    gridRef.current?.api.exportDataAsCsv();
-  };
-
-  const handleExportExcel = () => {
-    gridRef.current?.api.exportDataAsExcel();
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -153,7 +103,7 @@ const DataGridDashboard: React.FC = () => {
       <div className="flex-1 flex gap-6 px-3 pt-3 pb-6 overflow-hidden">
         {/* Data Grid Section (70%) */}
         <div className="flex-[0.8] bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <div className="p-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center">
               <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
               Data Grid
@@ -163,30 +113,12 @@ const DataGridDashboard: React.FC = () => {
                 </span>
               )}
             </h2>
-
-            {appliedTable && (
-              <Box sx={{ display: "flex", gap: "10px" }}>
-                <Button
-                  onClick={handleExportCSV}
-                  startIcon={<FileDownloadIcon />}
-                >
-                  Export CSV
-                </Button>
-                <Button
-                  onClick={handleExportExcel}
-                  startIcon={<FileDownloadIcon />}
-                >
-                  Export Excel
-                </Button>
-              </Box>
-            )}
           </div>
 
           <div className="flex-1 p-0 overflow-hidden">
             {appliedTable && data.length > 0 ? (
               <div className="h-full w-full ag-theme-alpine">
                 <AgGridReact
-                  ref={gridRef}
                   rowData={data}
                   columnDefs={columns}
                   rowSelection="multiple"
