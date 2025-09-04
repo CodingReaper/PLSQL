@@ -1,86 +1,75 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { BarChart3, Filter, Search } from "lucide-react";
-import { AgGridReact } from "ag-grid-react"; // ✅ Ag-Grid
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-alpine.css";
+import { AgGridReact } from "ag-grid-react";
 import { Button } from "@mui/material";
 import stateStreetLogo from "../assets/logo.png";
+import type { RowSelectionOptions } from "ag-grid-community";
+import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+import { AllEnterpriseModules } from "ag-grid-enterprise";
+import { themeAlpine } from "ag-grid-community";
 
-// ---------------- TYPES ----------------
-interface Person {
-  id: number;
-  firstName: string;
-  lastName: string;
-  company: string;
-  city: string;
-  country: string;
-}
+ModuleRegistry.registerModules([AllCommunityModule]);
+ModuleRegistry.registerModules([AllEnterpriseModules]);
 
-interface Trade {
-  id: string;
-  symbol: string;
-  quantity: string;
-  price: string;
-  status: string;
-}
-
-type TableKey = "people" | "trades";
-
-// ---------------- SAMPLE DATA ----------------
-const peopleData: Person[] = [
-  { id: 1, firstName: "John", lastName: "Doe", company: "Acme Inc.", city: "East Daphne", country: "USA" },
-  { id: 2, firstName: "Jane", lastName: "Doe", company: "Beta Corp", city: "Columbus", country: "USA" },
-  { id: 3, firstName: "Joe", lastName: "Doe", company: "Gamma LLC", city: "South Linda", country: "USA" },
-];
-
-const tradesData: Trade[] = [
-  { id: "TRD-001", symbol: "AAPL", quantity: "1000", price: "150.25", status: "Settled" },
-  { id: "TRD-002", symbol: "MSFT", quantity: "500", price: "320.80", status: "Failed" },
-  { id: "TRD-003", symbol: "GOOGL", quantity: "200", price: "2750.30", status: "Pending" },
-];
-
-// ---------------- CONFIG ----------------
-const tableConfigs: Record<
-  TableKey,
-  {
-    name: string;
-    data: Person[] | Trade[];
-    columns: any[];
-  }
-> = {
-  people: {
-    name: "People",
-    data: peopleData,
-    columns: [
-      { field: "id", headerName: "ID" },
-      { field: "firstName", headerName: "First Name" },
-      { field: "lastName", headerName: "Last Name" },
-      { field: "company", headerName: "Company" },
-      { field: "city", headerName: "City" },
-      { field: "country", headerName: "Country" },
-    ],
-  },
-  trades: {
-    name: "Trades",
-    data: tradesData,
-    columns: [
-      { field: "id", headerName: "Trade ID" },
-      { field: "symbol", headerName: "Symbol" },
-      { field: "quantity", headerName: "Quantity" },
-      { field: "price", headerName: "Price" },
-      { field: "status", headerName: "Status" },
-    ],
-  },
+const rowSelection: RowSelectionOptions = {
+  mode: "multirow",
+  headerCheckbox: true,
 };
 
-// ---------------- MAIN COMPONENT ----------------
 const DataGridDashboard: React.FC = () => {
-  const [selectedTable, setSelectedTable] = useState<TableKey | "">("");
-  const [appliedTable, setAppliedTable] = useState<TableKey | "">("");
+  const [tables, setTables] = useState<string[]>([]);
+  const [selectedTable, setSelectedTable] = useState<string>("");
+  const [appliedTable, setAppliedTable] = useState<string>("");
 
-  const config = appliedTable ? tableConfigs[appliedTable] : null;
-  const columns = useMemo(() => (config ? config.columns : []), [config]);
-  const data = useMemo(() => (config ? config.data : []), [config]);
+  const [columns, setColumns] = useState<any[]>([]);
+  const [data, setData] = useState<any[]>([]);
+
+  const defaultColDef = useMemo(() => {
+    return {
+      filter: "agSetColumnFilter",
+      floatingFilter: false,
+      filterParams: { defaultToNothingSelected: true },
+    };
+  }, []);
+
+  const onGridReady = useCallback((params: any) => {
+    params.api.getToolPanelInstance("filters").expandFilters();
+  }, []);
+
+  // Fetch all table names on load
+  useEffect(() => {
+    fetch("http://localhost:5000/tables")
+      .then((res) => res.json())
+      .then((data) => {
+        const tableNames = data.map((t: any) => t.tableName);
+        setTables(tableNames);
+      })
+      .catch((err) => console.error("Error fetching tables:", err));
+  }, []);
+
+  // Fetch data for selected table
+  const loadTableData = () => {
+    if (!selectedTable) return;
+
+    fetch(`http://localhost:5000/table/${selectedTable}`)
+      .then((res) => res.json())
+      .then((rows) => {
+        if (rows.length > 0) {
+          // Generate columns dynamically from keys
+          const cols = Object.keys(rows[0]).map((key) => ({
+            field: key,
+            headerName: key.charAt(0).toUpperCase() + key.slice(1),
+          }));
+          setColumns(cols);
+          setData(rows);
+        } else {
+          setColumns([]);
+          setData([]);
+        }
+        setAppliedTable(selectedTable);
+      })
+      .catch((err) => console.error("Error fetching table data:", err));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -101,7 +90,7 @@ const DataGridDashboard: React.FC = () => {
 
       {/* ---------------- MAIN CONTENT ---------------- */}
       <div className="flex-1 flex gap-6 px-3 pt-3 pb-6 overflow-hidden">
-        {/* Data Grid Section (70%) */}
+        {/* Data Grid Section */}
         <div className="flex-[0.8] bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center">
@@ -109,7 +98,7 @@ const DataGridDashboard: React.FC = () => {
               Data Grid
               {appliedTable && (
                 <span className="ml-2 text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded">
-                  {config?.name}
+                  {appliedTable}
                 </span>
               )}
             </h2>
@@ -121,16 +110,15 @@ const DataGridDashboard: React.FC = () => {
                 <AgGridReact
                   rowData={data}
                   columnDefs={columns}
-                  rowSelection="multiple"
+                  defaultColDef={defaultColDef}
+                  rowSelection={rowSelection}
+                  theme={themeAlpine}
                   pagination={true}
-                  paginationPageSize={5}
+                  paginationPageSize={10}
+                  paginationPageSizeSelector={[10, 25, 50]}
+                  sidebar={"filters"}
+                  onGridReady={onGridReady}
                   animateRows={true}
-                  defaultColDef={{
-                    flex: 1,
-                    resizable: true,
-                    sortable: true,
-                    filter: true,
-                  }}
                 />
               </div>
             ) : (
@@ -147,7 +135,7 @@ const DataGridDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter Section (30%) */}
+        {/* Filter Section */}
         <div className="flex-[0.2] bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center">
@@ -162,13 +150,13 @@ const DataGridDashboard: React.FC = () => {
               </label>
               <select
                 value={selectedTable}
-                onChange={(e) => setSelectedTable(e.target.value as TableKey)}
+                onChange={(e) => setSelectedTable(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               >
                 <option value="">Choose a table...</option>
-                {Object.entries(tableConfigs).map(([key, cfg]) => (
-                  <option key={key} value={key}>
-                    {cfg.name}
+                {tables.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
                   </option>
                 ))}
               </select>
@@ -177,7 +165,7 @@ const DataGridDashboard: React.FC = () => {
             <Button
               fullWidth
               disabled={!selectedTable}
-              onClick={() => setAppliedTable(selectedTable)}
+              onClick={loadTableData}
               sx={{
                 background: "#2563eb",
                 color: "white",
