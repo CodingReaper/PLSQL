@@ -24,7 +24,8 @@ const DataGridDashboard: React.FC = () => {
   const [columns, setColumns] = useState<any[]>([]);
   const [data, setData] = useState<any[]>([]);
 
-  const [loading, setLoading] = useState(false);
+  const [loadingTables, setLoadingTables] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
 
   const defaultColDef = useMemo(() => {
     return {
@@ -41,18 +42,19 @@ const DataGridDashboard: React.FC = () => {
   // Fetch all table names on load
   useEffect(() => {
     const fetchTables = async () => {
-      setLoading(true);
+      setLoadingTables(true);
       try {
         const res = await fetch("http://localhost:5000/tables");
-        const data = await res.json();
-        const tableNames = data.map((t: any) => t.tableName);
+        const json = await res.json();
+        const tableNames = json.map((t: any) => t.tableName);
         setTables(tableNames);
       } catch (err) {
         console.error("Error fetching tables:", err);
       } finally {
-        setLoading(false);
+        setLoadingTables(false);
       }
     };
+
     fetchTables();
   }, []);
 
@@ -60,7 +62,7 @@ const DataGridDashboard: React.FC = () => {
   const loadTableData = async () => {
     if (!selectedTable) return;
 
-    setLoading(true);
+    setLoadingData(true);
     try {
       const res = await fetch(`http://localhost:5000/table/${selectedTable}`);
       const rows = await res.json();
@@ -80,16 +82,21 @@ const DataGridDashboard: React.FC = () => {
     } catch (err) {
       console.error("Error fetching table data:", err);
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col relative">
-      {/* Full Screen Loader */}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="w-14 h-14 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Full Screen Spinner Overlay */}
+      {(loadingTables || loadingData) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mb-4"></div>
+            <p className="text-lg font-medium text-gray-800">
+              {loadingTables ? "Loading tables..." : "Loading data..."}
+            </p>
+          </div>
         </div>
       )}
 
@@ -125,7 +132,7 @@ const DataGridDashboard: React.FC = () => {
           </div>
 
           <div className="flex-1 p-0 overflow-hidden">
-            {appliedTable && data.length > 0 ? (
+            {!loadingData && appliedTable && data.length > 0 ? (
               <div className="h-full w-full ag-theme-alpine">
                 <AgGridReact
                   rowData={data}
@@ -172,6 +179,7 @@ const DataGridDashboard: React.FC = () => {
                 value={selectedTable}
                 onChange={(e) => setSelectedTable(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                disabled={loadingTables}
               >
                 <option value="">Choose a table...</option>
                 {tables.map((name) => (
@@ -184,7 +192,7 @@ const DataGridDashboard: React.FC = () => {
 
             <Button
               fullWidth
-              disabled={!selectedTable}
+              disabled={!selectedTable || loadingData || loadingTables}
               onClick={loadTableData}
               sx={{
                 background: "#2563eb",
