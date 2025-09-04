@@ -169,4 +169,45 @@ const DataGridDashboard: React.FC = () => {
               </label>
               {loadingTables ? (
                 <div className="flex justify-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-blue-600"></div>
+                </div>
+              ) : (
+                <select
+                  value={selectedTable}
+                  onChange={(e) => setSelectedTable(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Choose a table...</option>
+                  {tables.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <Button
+              fullWidth
+              disabled={!selectedTable || loadingData}
+              onClick={loadTableData}
+              sx={{
+                background: "#2563eb",
+                color: "white",
+                fontWeight: "400",
+                textTransform: "none",
+                "&:hover": {
+                  background: "linear-gradient(to right, #3730a3, #1e40af)",
+                },
+              }}
+            >
+              {loadingData ? "Loading..." : "Submit"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DataGridDashboard;
