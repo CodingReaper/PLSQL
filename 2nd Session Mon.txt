@@ -1,10 +1,210 @@
-1. Adaptive Planning REST APIs are used to access data and supported functionalities within Workday Adaptive Planning.
+Create a professional infrastructure migration document for the DC3 Migration – EPM Jumpbox from On-Premises to Cloud.
 
-2. Oracle Planning/PBCS REST APIs are used to perform supported operations within Oracle EPM Planning. They are not a direct connector to Workday Adaptive Planning.
+Background
 
-3. To integrate the two systems through APIs, we would need an integration layer/script that calls the Adaptive API, processes the data, and then sends it to PBCS using the Oracle API.
+The DC3 migration is a like-for-like migration of the existing On-Premises EPM Jumpbox to a new Cloud server.
 
-4. Alternatively, we can continue with the existing file-based approach:
-   Adaptive → CSV/TXT → Shared Path → EPM Jumpbox → EPM Automate → PBCS
+There are no major functional or application changes. The primary infrastructure changes are:
 
-5. The Adaptive team should provide/validate the Adaptive API, including the endpoint, authentication, required parameters, and data response. The EPM team can then handle the PBCS-side loading/integration.
+- Old On-Premises server replaced by a new Cloud server.
+- New server hostname/server name.
+- Underlying filesystem/server infrastructure migrated.
+- AD groups migrated/recreated for the new server.
+- Existing folder/share permissions migrated to the new server.
+- Existing EPM applications, scripts, and processes should continue to function as before, with only server-specific references updated where required.
+
+Document Objective
+
+Create an infrastructure-focused document that clearly captures:
+
+1. What changed as part of the DC3 migration.
+2. What remained unchanged.
+3. Old vs. new server details.
+4. File system and shared path changes.
+5. AD groups and permissions.
+6. Windows services and scheduled tasks.
+7. Network/connectivity requirements.
+8. Important configuration files/environment variables.
+9. Post-migration validation and testing.
+
+Suggested Document Structure
+
+1. Executive Summary
+Briefly explain the purpose of the DC3 migration and emphasize that this is a like-for-like infrastructure migration with no significant application/functional changes.
+
+2. Migration Scope
+Describe what is in scope:
+
+- EPM Jumpbox
+- Server infrastructure
+- File system
+- Shared folders
+- AD groups
+- Folder/share permissions
+- Required services
+- Connectivity
+- Existing scripts and supporting components
+
+Also explicitly state what is out of scope, such as functional redesign or changes to EPM application architecture.
+
+3. Existing vs. New Infrastructure
+Create a comparison table with columns:
+
+- Component
+- Existing On-Premises
+- New Cloud
+- Change/Remarks
+
+Include placeholders for:
+
+- Server Name
+- Environment
+- Operating System
+- IP Address
+- Domain
+- AD Group
+- File System
+- Server Purpose
+
+Do NOT invent any values. Use placeholders such as "[OLD SERVER NAME]", "[NEW SERVER NAME]", etc.
+
+4. File System and Directory Structure
+Create a table for important application directories with:
+
+- Application/Component
+- Old Path
+- New Path
+- Status
+- Remarks
+
+Include areas for Oracle Middleware, EPM Automate, EPM Agent, Connect Direct, scripts, vendor applications, and other relevant directories.
+
+Add a subsection for Shared Folders / UNC Paths with a table:
+
+- Share Name
+- Old UNC Path
+- New UNC Path
+- Physical Path
+- Access/Permissions
+- Remarks
+
+Include placeholders for screenshots showing the shared paths and physical folder mappings.
+
+5. AD Groups and Access Permissions
+Create a section documenting:
+
+- AD groups
+- Service accounts
+- Folder permissions
+- Share permissions
+- Required access levels
+
+Create a table:
+
+- AD Group/Account
+- Resource
+- Permission
+- Purpose
+- Validation Status
+
+Add placeholders for screenshots of the Security/Advanced Permissions configuration.
+
+6. Windows Services and Scheduled Tasks
+Document the relevant services and tasks running on the new server.
+
+Create a table:
+
+- Service/Task
+- Startup/Schedule
+- Run As Account
+- Purpose
+- Status
+- Validation
+
+Include placeholders for EPM Agent, Node Manager, OHS, Connect Direct, and any other relevant services/tasks.
+
+7. Network and Connectivity
+Create a table for required connectivity:
+
+- Source
+- Destination
+- Port
+- Protocol
+- Purpose
+- Validation Result
+
+Include common connectivity areas such as EPM Cloud, Oracle/FDW, LDAP, NAS/FSx, Connect Direct, and other required systems.
+
+Do not assume port numbers unless provided. Use placeholders where necessary.
+
+8. Configuration and Environment
+Document important configuration items and their locations, including:
+
+- Oracle Client
+- tnsnames.ora
+- sqlnet.ora
+- Java/JDK
+- EPM Automate
+- EPM Agent
+- OHS
+- Node Manager
+- Environment variables
+- PATH
+- TNS_ADMIN
+
+Create an Old vs. New comparison where appropriate.
+
+9. Migration Changes Summary
+Create a concise table:
+
+- Area
+- Change
+- Impact
+- Status
+
+Clearly distinguish between:
+
+- Changed due to migration
+- Migrated as-is
+- No change
+
+10. Post-Migration Validation
+Create a validation checklist covering:
+
+- Server accessibility
+- AD authentication
+- Folder/share access
+- EPM Automate
+- EPM Agent
+- Oracle/SQL connectivity
+- FDW connectivity
+- LDAP connectivity
+- NAS/file transfer
+- Connect Direct
+- AutoSys/job execution
+- Required Windows services
+
+Use columns:
+
+- Component
+- Test Performed
+- Expected Result
+- Actual Result
+- Status
+- Evidence/Screenshot Reference
+
+11. Conclusion
+State that the DC3 migration moved the EPM Jumpbox infrastructure from On-Premises to Cloud while maintaining the existing application functionality and access model, subject to successful post-migration validation.
+
+Formatting Requirements
+
+- Make the document look like a formal enterprise infrastructure/change-management document.
+- Use professional headings, tables, numbered sections, and concise technical language.
+- Keep the document practical rather than overly verbose.
+- Highlight actual infrastructure changes versus unchanged components.
+- Add clearly marked "[INSERT SCREENSHOT]" placeholders wherever screenshots/evidence should be added.
+- Add "[TO BE UPDATED]" placeholders for information that needs to be filled in manually.
+- Do not fabricate server names, IPs, AD groups, ports, paths, service names, or test results.
+- Include a Document Control / Version History table at the beginning.
+- Include an Assumptions / Notes section for items that need confirmation.
+- Make the final document easy to edit and suitable for sharing with an infrastructure/operations manager.
